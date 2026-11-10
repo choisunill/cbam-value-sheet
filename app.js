@@ -2,7 +2,7 @@
 (function () {
   const S = window.CBAM_SHEET, K = window.CBAM_CATALOG;
   const $ = (id) => document.getElementById(id);
-  const KEY = "cbam-value-sheet-v2";
+  const KEY = "cbam-value-sheet-v3";
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const eur = (v, d = 0) => "€" + v.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
   const fmtCode = (c) => c.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1 $2 $3");
@@ -19,7 +19,7 @@
     return {
       code, year: 2026, qty: 100, ourPrice: S.MARKET_PRICES.ours,
       rivals: S.DEFAULT_RIVALS.map((o) => rivalFor(code, o)),
-      company: "", buyer: "", buyerType: "distributor",
+      company: "", buyer: "", buyerProfile: { industry: "distributor", purpose: "resale", exposure: "unknown", esg: false }, roles: true,
       dataItems: { cn: true, mill: true, volume: true, installation: false },
       verification: "none", clause: { on: true, share: 0.5, cap: 120 }, lang: "ko",
     };
@@ -33,21 +33,17 @@
 
   // ---------- 입력 화면 만들기 ----------
   const sectorKo = { steel: "철강", aluminium: "알루미늄" };
-  // CN 코드 단계 선택: 호(4자리) → 소호(6자리) → 8자리
-  const DESC = (window.CBAM_CATALOG_DATA && window.CBAM_CATALOG_DATA.dvDesc) || {};
-  const short = (t, n = 70) => (t.length > n ? t.slice(0, n - 1) + "…" : t);
-  const labelFor = (prefix) => DESC[prefix] || ALL.find((c) => c.cn.startsWith(prefix)).desc;
+  // CN 코드 선택: 4자리 → 2자리 → 2자리. 앞 칸을 바꾸면 뒤 칸 목록이 바뀐다. 품명은 아래 한 줄로.
   const uniq = (arr) => [...new Set(arr)];
-  const optHTML = (code, text) => `<option value="${code}">${fmtCode(code).replace(/^(\d{4})(\d{2})$/, "$1 $2")} · ${esc(short(text))}</option>`;
   function fillH4() {
     $("h4").innerHTML = ["steel", "aluminium"].map((sec) =>
-      `<optgroup label="${sectorKo[sec]}">${uniq(ALL.filter((c) => c.sector === sec).map((c) => c.cn.slice(0, 4))).map((h) => optHTML(h, labelFor(h))).join("")}</optgroup>`).join("");
+      `<optgroup label="${sectorKo[sec]}">${uniq(ALL.filter((c) => c.sector === sec).map((c) => c.cn.slice(0, 4))).map((h) => `<option value="${h}">${h}</option>`).join("")}</optgroup>`).join("");
   }
   function fillH6(h4) {
-    $("h6").innerHTML = uniq(ALL.filter((c) => c.cn.startsWith(h4)).map((c) => c.cn.slice(0, 6))).map((h) => optHTML(h, labelFor(h))).join("");
+    $("h6").innerHTML = uniq(ALL.filter((c) => c.cn.startsWith(h4)).map((c) => c.cn.slice(0, 6))).map((h) => `<option value="${h}">${h.slice(4)}</option>`).join("");
   }
   function fillCn8(h6) {
-    $("cn8").innerHTML = ALL.filter((c) => c.cn.startsWith(h6)).map((c) => optHTML(c.cn, c.desc)).join("");
+    $("cn8").innerHTML = ALL.filter((c) => c.cn.startsWith(h6)).map((c) => `<option value="${c.cn}">${c.cn.slice(6)}</option>`).join("");
   }
   function showCode(cn) {
     fillH4(); $("h4").value = cn.slice(0, 4);
@@ -56,8 +52,10 @@
   }
   fillH4();
   $("year").innerHTML = S.YEARS.map((y) => `<button type="button" role="radio" data-y="${y}">${y}</button>`).join("");
-  $("buyerType").innerHTML = Object.entries(S.BUYER_TYPES).map(([k, t]) =>
-    `<button type="button" role="radio" data-k="${k}"><strong>${esc(t.label)}</strong><span>${esc(t.headline)}</span></button>`).join("");
+  // 바이어 진단(STP) 질문
+  $("buyerProfile").innerHTML = `<div class="qgrid">${Object.entries(S.QUESTIONS).map(([k, q]) =>
+    `<label class="field" style="margin:0"><span>${esc(q.ko)}</span><select data-q="${k}">${Object.entries(q.options).map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join("")}</select></label>`).join("")}
+    <label class="check" style="margin:0"><input type="checkbox" data-q="esg"> 공급망 탄소(Scope 3)를 공시하거나 관리함</label></div>`;
   $("dataItems").innerHTML = "<span>제안서에 적을 제공 자료</span>" + Object.entries(S.DATA_ITEMS).map(([k, v]) =>
     `<label class="check"><input type="checkbox" data-k="${k}"> ${esc(v.ko)}</label>`).join("");
   $("verification").innerHTML = Object.entries(S.VERIFICATION).map(([k, v]) => `<option value="${k}">${esc(v.ko)}</option>`).join("");
@@ -80,6 +78,10 @@
     $("cap").value = state.clause.cap == null ? "" : state.clause.cap;
     $("verification").value = state.verification;
     document.querySelectorAll("#dataItems input").forEach((el) => (el.checked = !!state.dataItems[el.dataset.k]));
+    document.querySelectorAll("#buyerProfile [data-q]").forEach((el) => {
+      if (el.type === "checkbox") el.checked = !!state.buyerProfile[el.dataset.q]; else el.value = state.buyerProfile[el.dataset.q];
+    });
+    $("rolesOn").checked = state.roles !== false;
     renderAddRival();
   }
 
@@ -96,7 +98,19 @@
     syncInputs(); render();
   }
   $("year").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.year = Number(b.dataset.y); render(); } });
-  $("buyerType").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.buyerType = b.dataset.k; render(); } });
+  $("buyerProfile").addEventListener("change", (e) => {
+    const k = e.target.dataset.q;
+    if (!k) return;
+    state.buyerProfile[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    render();
+  });
+  $("rolesOn").addEventListener("change", (e) => { state.roles = e.target.checked; render(false); });
+  $("mailRival").addEventListener("change", (e) => { state.mailRival = e.target.value; renderMail(lastSheet); });
+  $("mailCopy").addEventListener("click", async () => {
+    const text = $("mailSubject").value + "\n\n" + $("mailBody").value;
+    try { await navigator.clipboard.writeText(text); $("mailCopied").textContent = "복사했어요"; }
+    catch { $("mailBody").select(); $("mailCopied").textContent = "Ctrl+C로 복사하세요"; }
+  });
   [["qty", "qty"], ["ourPrice", "ourPrice"]].forEach(([id, k]) => $(id).addEventListener("input", (e) => { state[k] = num(e.target.value); render(); }));
   [["company", "company"], ["buyer", "buyer"]].forEach(([id, k]) => $(id).addEventListener("input", (e) => { state[k] = e.target.value; render(); }));
   $("clauseOn").addEventListener("change", (e) => { state.clause.on = e.target.checked; render(); });
@@ -146,6 +160,22 @@
     }).join("");
   }
 
+  let lastSheet = null;
+  // 협상 메일: 판정이 나온 경쟁국 중 고른 것을 기준으로 쓴다. 언어는 제안서 언어를 따른다.
+  function renderMail(s) {
+    if (!s || !s.ok) { $("mailSubject").value = ""; $("mailBody").value = ""; return; }
+    const opts = s.comparisons;
+    if (!opts.some((c) => c.origin === state.mailRival)) state.mailRival = (opts.find((c) => c.verdict === "hold") || opts[0] || {}).origin || "";
+    $("mailRival").innerHTML = opts.map((c) => `<option value="${esc(c.origin)}">${esc(c.nameKo)}산 대비 · ${{ hold: "가격 유지", match: "분담 검토", nonprice: "가격 외 경쟁" }[c.verdict]}</option>`).join("")
+      + `<option value="">비교 없이 (가격 조항만)</option>`;
+    $("mailRival").value = state.mailRival;
+    const rival = opts.find((c) => c.origin === state.mailRival) || null;
+    const m = window.CBAM_MESSAGES.email(s, rival, { lang: state.lang, company: state.company, buyer: state.buyer, clause: state.clause });
+    $("mailSubject").value = m.subject;
+    $("mailBody").value = m.body;
+    $("mailCopied").textContent = "";
+  }
+
   // 제안서 문구. 숫자와 구조는 같고 말만 바뀐다.
   const TEXT = {
     en: {
@@ -162,6 +192,13 @@
       thSupplier: "Supplier", thBuyer: "Buyer", capped: " (cap)",
       dataH: "Emissions data we provide", tbd: "To be agreed.", verif: "Verification status:",
       item: (d) => d.en, verifText: (v) => v.en, headline: (t) => t.headline, pitch: (t) => t.pitch,
+      rolesH: "What each team in your company gets", thRole: "Team", thNeed: "What they check", thValue: "Answer",
+      roles: (s, ourTotal, v) => [
+        ["Purchasing", "Total landed cost per tonne", ourTotal != null ? `${eur(ourTotal)} incl. CBAM` : `CBAM ${eur(s.current.cost)} on top of unit price`],
+        ["Finance", "How CBAM moves to 2028", `${eur(s.years[0].cost)} → ${eur(s.years[2].cost)} per tonne${state.clause.on && state.clause.cap != null ? `; our share capped at ${eur(state.clause.cap)}` : ""}`],
+        ["Sustainability / ESG", "Emissions basis and verification", `Default ${+s.defaultValue.toFixed(3)} tCO2e/t; ${v.en}`],
+        ["Customs / CBAM declarant", "Data for the declaration", `CN ${fmtCode(s.code)}, ${s.current.certificates.toFixed(4)} certificates / t`],
+      ],
       footer: "Estimate based on EU default values (Implementing Regulations (EU) 2026/1740 and 2025/2620). Not a CBAM declaration and not legal advice. Actual emissions and carbon prices paid in Korea are not included.",
     },
     ko: {
@@ -178,6 +215,13 @@
       thSupplier: "공급사", thBuyer: "바이어", capped: " (상한)",
       dataH: "제공하는 배출 자료", tbd: "협의해 정합니다.", verif: "검증 상태:",
       item: (d) => d.ko, verifText: (v) => v.koLong, headline: (t) => t.headlineKo, pitch: (t) => t.pitchKo,
+      rolesH: "바이어 회사 안 역할별 핵심", thRole: "담당", thNeed: "확인하는 것", thValue: "답",
+      roles: (s, ourTotal, v) => [
+        ["구매", "톤당 총조달비용", ourTotal != null ? `CBAM 포함 ${eur(ourTotal)}` : `단가에 CBAM ${eur(s.current.cost)} 추가`],
+        ["재무", "2028년까지 CBAM 변화", `톤당 ${eur(s.years[0].cost)} → ${eur(s.years[2].cost)}${state.clause.on && state.clause.cap != null ? `, 당사 분담 상한 ${eur(state.clause.cap)}` : ""}`],
+        ["ESG·지속가능성", "배출 근거와 검증 상태", `기본값 ${+s.defaultValue.toFixed(3)} tCO2e/톤, ${v.koLong}`],
+        ["통관·CBAM 신고", "신고에 필요한 자료", `CN ${fmtCode(s.code)}, 인증서 ${s.current.certificates.toFixed(4)}장/톤`],
+      ],
       footer: "EU 기본값(시행규칙 (EU) 2026/1740, 2025/2620)에 따른 추정치입니다. CBAM 신고서나 법률 자문이 아닙니다. 실제 배출값과 한국에서 낸 탄소가격은 반영하지 않았습니다.",
     },
   };
@@ -210,6 +254,10 @@
         <table><thead><tr><th>${L.thYear}</th><th>${L.thCost}</th><th>${L.thSupplier}</th><th>${L.thBuyer}</th></tr></thead><tbody>
         ${s.clause.map((c) => `<tr><td>${c.year}</td><td>${eur(c.total)}</td><td>${eur(c.seller)}${c.capped ? L.capped : ""}</td><td>${eur(c.buyer)}</td></tr>`).join("")}
         </tbody></table>` : "",
+      roles: s.roles ? `<h3>${L.rolesH}</h3>
+        <table class="roles"><thead><tr><th>${L.thRole}</th><th>${L.thNeed}</th><th>${L.thValue}</th></tr></thead><tbody>
+        ${L.roles(s, s.buyerComparisons.length ? s.buyerComparisons[0].ourTotal : null, s.verification).map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("")}
+        </tbody></table>` : "",
       data: `<h3>${L.dataH}</h3>
         ${s.dataProvided.length ? `<ul>${s.dataProvided.map((d) => `<li>${esc(L.item(d))}</li>`).join("")}</ul>` : `<p>${L.tbd}</p>`}
         <div class="status"><strong>${L.verif}</strong> ${esc(L.verifText(s.verification))}</div>`,
@@ -219,6 +267,7 @@
         <div class="meta">${L.from} <strong>${esc(from)}</strong><br>${L.to} <strong>${esc(to)}</strong><br>CN ${fmtCode(s.code)}<br>${today}</div>
       </header>
       <p class="pitch">${esc(L.pitch(t))}</p>
+      ${s.lowExposure ? `<p class="src">${state.lang === "ko" ? "귀사의 연간 CBAM 품목 수입이 50톤 이하라면 CBAM이 면제될 수 있습니다. 아래 수치는 그 기준을 넘을 때 적용됩니다." : "If your company's total CBAM imports stay at or below 50 tonnes a year, you may be exempt. The figures below apply above that threshold."}</p>` : ""}
       ${t.order.map((k) => sections[k]).join("")}
       <footer>${L.footer}</footer>`;
   }
@@ -236,7 +285,10 @@
     const info = BY_CODE[state.code];
     $("codeDesc").textContent = info ? `${sectorKo[info.sector]} · ${info.desc}` : "";
     document.querySelectorAll("#year button").forEach((b) => b.setAttribute("aria-checked", String(Number(b.dataset.y) === state.year)));
-    document.querySelectorAll("#buyerType button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.k === state.buyerType)));
+    if (s.ok) $("segment").innerHTML = `<strong>${esc(s.type.label)}</strong>${esc(s.type.why)}`;
+    $("regCheck").innerHTML = S.regCheck(s, state).map((i) => `<li class="${i.level}">${esc(i.text)}</li>`).join("");
+    lastSheet = s;
+    renderMail(s);
     $("shareOut").textContent = Math.round(state.clause.share * 100) + "%";
     $("clauseInputs").hidden = !state.clause.on;
     $("priceHint").textContent = state.code === S.MARKET_PRICES.code

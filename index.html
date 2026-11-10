@@ -40,13 +40,12 @@
 
     <section class="step" id="s1">
       <h2><span class="num">1</span>제품 진단</h2>
-      <div class="field"><span>CN 코드 (호 4자리 → 소호 6자리 → 8자리 순서로 고르기)</span>
-        <select id="h4" aria-label="호 4자리"></select>
-        <select id="h6" aria-label="소호 6자리"></select>
-        <select id="cn8" aria-label="CN 8자리"></select>
+      <div class="field"><span>CN 코드</span>
+        <div class="code-pick"><select id="h4" aria-label="CN 코드 1~4자리"></select><select id="h6" aria-label="CN 코드 5~6자리"></select><select id="cn8" aria-label="CN 코드 7~8자리"></select></div>
       </div>
       <p class="hint" id="codeDesc"></p>
       <div class="coverage" id="coverage" role="status"></div>
+      <div class="regcheck"><div class="regcheck-h">규제 진단 <small>TradeGuard 연계</small></div><ul id="regCheck"></ul></div>
       <div class="field"><span>수입 연도</span>
         <div class="seg" id="year" role="radiogroup" aria-label="수입 연도"></div>
       </div>
@@ -59,9 +58,8 @@
       <h2><span class="num">2</span>바이어</h2>
       <label class="field"><span>우리 회사명</span><input id="company" type="text" maxlength="60" placeholder="예: OO볼트(주)"></label>
       <label class="field"><span>바이어 회사명</span><input id="buyer" type="text" maxlength="60" placeholder="예: Muster GmbH"></label>
-      <div class="field"><span>바이어 유형</span>
-        <div class="cards" id="buyerType"></div>
-      </div>
+      <div id="buyerProfile"></div>
+      <div class="segment" id="segment" role="status"></div>
     </section>
 
     <section class="step" id="s3">
@@ -77,11 +75,19 @@
         <label class="field"><span>우리 분담률 <output id="shareOut"></output></span><input id="share" type="range" min="0" max="100" step="5"></label>
         <label class="field"><span>톤당 상한 (€, 비우면 없음)</span><input id="cap" type="number" min="0" step="1"></label>
       </div>
+      <div class="mail">
+        <div class="mail-h">협상 대응 메일 초안 <small>바이어가 CBAM 분담을 요구할 때</small></div>
+        <label class="field"><span>비교 기준</span><select id="mailRival"></select></label>
+        <input id="mailSubject" type="text" readonly aria-label="메일 제목">
+        <textarea id="mailBody" rows="10" readonly aria-label="메일 본문"></textarea>
+        <button type="button" class="btn" id="mailCopy">메일 복사</button> <span class="hint" id="mailCopied" role="status"></span>
+      </div>
     </section>
 
     <section class="step" id="s4">
       <h2><span class="num">4</span>제공할 자료</h2>
       <div class="field" id="dataItems"></div>
+      <label class="check"><input type="checkbox" id="rolesOn"> 바이어 회사 안 역할별 핵심 넣기</label>
       <label class="field"><span>배출 데이터 검증 상태</span><select id="verification"></select></label>
       <button type="button" class="btn primary wide" id="print">제안서 PDF로 저장</button>
       <p class="hint">인쇄 창에서 "PDF로 저장"을 고르세요.</p>
@@ -109,6 +115,7 @@
 <script src="catalog-data.js"></script>
 <script src="catalog.js"></script>
 <script src="sheet.js"></script>
+<script src="messages.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

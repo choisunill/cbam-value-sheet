@@ -7,7 +7,7 @@ const rivals = S.DEFAULT_RIVALS.map((o) => ({
 }));
 const base = {
   code: "73181588", year: 2026, qty: 100, ourPrice: 2064, rivals,
-  buyerType: "distributor", dataItems: { cn: true, mill: true }, verification: "self",
+  buyerProfile: { industry: "distributor", purpose: "resale", exposure: "high", esg: false }, dataItems: { cn: true, mill: true }, verification: "self",
   clause: { on: true, share: 0.5, cap: 120 },
 };
 
@@ -48,4 +48,33 @@ test("CBAM 대상이 아닌 코드는 이유를 돌려준다", () => {
   const s = S.build({ ...base, code: "73170000" });
   assert.strictEqual(s.ok, false);
   assert.ok(s.reason);
+});
+
+test("바이어 진단: 재판매 유통사는 비용, 생산 투입 제조사는 위험, 프로젝트는 비용 확정", () => {
+  assert.strictEqual(S.segmentFor({ industry: "distributor", purpose: "resale" }), "cost");
+  assert.strictEqual(S.segmentFor({ industry: "manufacturer", purpose: "production" }), "risk");
+  assert.strictEqual(S.segmentFor({ industry: "distributor", purpose: "resale", esg: true }), "risk");
+  assert.strictEqual(S.segmentFor({ industry: "construction", purpose: "resale" }), "certainty");
+  assert.strictEqual(S.build({ ...base, buyerProfile: { purpose: "project" } }).type.order[0], "clause");
+});
+
+test("규제 진단: 50톤 이하일 수 있으면 경고", () => {
+  const st = { ...base, buyerProfile: { exposure: "low" } };
+  const items = S.regCheck(S.build(st), st);
+  assert.ok(items.some((i) => i.level === "warn" && i.text.includes("50톤")));
+});
+
+test("협상 메일: 판정별 문장과 숫자", () => {
+  const M = require("./messages.js");
+  const s = S.build(base);
+  const tw = s.comparisons.find((c) => c.origin === "Taiwan");
+  const en = M.email(s, tw, { lang: "en", company: "A", buyer: "B", clause: base.clause });
+  assert.match(en.body, /keep our current price/);
+  assert.match(en.body, /€2,269/);
+  const ko = M.email(s, tw, { lang: "ko", clause: base.clause });
+  assert.match(ko.body, /현재 단가를 유지/);
+  const match = M.email(s, { ...tw, verdict: "match", needed: 50, share: 0.25 }, { lang: "en", clause: base.clause });
+  assert.match(match.body, /contribute €50 per tonne/);
+  const non = M.email(s, { ...tw, verdict: "nonprice" }, { lang: "en", clause: base.clause });
+  assert.doesNotMatch(non.body, /€2,377/); // 가격 외 경쟁일 때 경쟁국 총비용을 바이어에게 알리지 않는다
 });

@@ -74,6 +74,14 @@ input[type=range] { width: 100%; accent-color: var(--primary); }
 input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--primary); margin: 0; }
 ::placeholder { color: rgba(0,0,0,.25); }
 
+.code-pick { display: flex; gap: 12px; }
+.code-pick select {
+  width: auto; min-width: 104px; height: 40px; padding: 0 36px 0 14px; border-radius: var(--radius-lg); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23595959' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 14px center;
+}
+.code-pick select:first-child { min-width: 120px; }
+
 /* Radio.Button */
 .seg { display: inline-flex; }
 .seg button { height: 32px; padding: 0 15px; border: 1px solid var(--border); background: #fff; cursor: pointer; margin-left: -1px; transition: color .2s; }
@@ -95,6 +103,23 @@ input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--primary); 
 .coverage.ok { background: var(--success-bg); border-color: var(--success-border); }
 .coverage.no { background: var(--error-bg); border-color: var(--error-border); }
 .hint { font-size: 12px; color: var(--text-3); margin: -8px 0 12px; }
+
+/* 규제 진단, 세그먼트, 메일 */
+.regcheck { border: 1px solid var(--split); border-radius: var(--radius-lg); padding: 12px 16px; margin-bottom: 16px; background: #fafafa; }
+.regcheck-h, .mail-h { font-weight: 600; margin-bottom: 8px; }
+.regcheck-h small, .mail-h small { font-weight: 400; font-size: 12px; color: var(--text-3); margin-left: 4px; }
+.regcheck ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; color: var(--text-2); }
+.regcheck li { display: grid; grid-template-columns: 18px 1fr; gap: 6px; }
+.regcheck li::before { content: "i"; display: grid; place-items: center; width: 16px; height: 16px; margin-top: 2px; border-radius: 50%; font-size: 11px; font-weight: 700; color: #fff; background: var(--primary); }
+.regcheck li.ok::before { content: "✓"; background: var(--success); }
+.regcheck li.warn::before { content: "!"; background: var(--warning); }
+.segment { border: 1px solid var(--primary-border); background: var(--primary-bg); border-radius: var(--radius-lg); padding: 10px 14px; font-size: 13px; color: var(--text-2); margin-bottom: 4px; }
+.segment strong { color: var(--primary); font-size: 14px; margin-right: 6px; }
+.qgrid { display: grid; gap: 12px; margin-bottom: 12px; }
+.mail { border-top: 1px solid var(--split); margin-top: 16px; padding-top: 16px; }
+.mail input[readonly] { margin-bottom: 8px; background: #fafafa; }
+.mail textarea { width: 100%; padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--radius); font: inherit; font-size: 13px; line-height: 1.6; resize: vertical; background: #fafafa; margin-bottom: 8px; }
+.paper .roles td:nth-child(2), .paper .roles th:nth-child(2) { text-align: left; }
 
 /* 경쟁국 행 */
 .compare { display: grid; gap: 8px; margin-bottom: 12px; }

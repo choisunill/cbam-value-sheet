@@ -17,25 +17,49 @@
   const DUTY_7318 = { Taiwan: 3.7, India: 3.7, "Türkiye": 0, "Viet Nam": 0, China: 3.7, Japan: 0 };
   const DEFAULT_RIVALS = ["Taiwan", "India", "Türkiye", "Viet Nam", "China", "Japan"];
 
-  // 바이어 유형. 세분화 담당 결과가 나오면 이 목록을 바꾼다. shortcut: 지금은 예시 2개.
-  const BUYER_TYPES = {
-    distributor: {
-      label: "유통사·수입상 (예시)",
+  // 바이어 진단(STP). 세 질문의 답으로 세그먼트를 정하고, 세그먼트가 제안서의 강조점과 순서를 정한다.
+  // shortcut: 분류 규칙은 예시다. 세분화 담당 결과가 나오면 QUESTIONS와 segmentFor만 바꾼다.
+  const QUESTIONS = {
+    industry: { ko: "업종", options: { distributor: "유통·수입상", manufacturer: "자동차·기계 부품 제조", construction: "건설·프로젝트" } },
+    purpose: { ko: "구매 목적", options: { resale: "재판매", production: "생산에 투입", project: "프로젝트 납품" } },
+    exposure: { ko: "규제 노출 (바이어의 연간 CBAM 품목 수입)", options: { high: "50톤 넘음", low: "50톤 이하일 수 있음", unknown: "모름" } },
+  };
+
+  const SEGMENTS = {
+    cost: {
+      label: "비용 중심",
+      why: "재판매용으로 사서 단가와 총조달비용이 가장 중요한 바이어예요. 비용 → 경쟁 비교 순서로 보여 줘요.",
       headline: "Know the CBAM cost of every tonne before you quote.",
       pitch: "As the EU importer you pay CBAM. We give you the cost per tonne, how it moves to 2028, and the data your declaration needs, so you can price without guessing.",
       headlineKo: "톤마다 CBAM 비용을 미리 알고 견적하세요.",
       pitchKo: "CBAM은 EU 수입자인 귀사가 냅니다. 톤당 비용, 2028년까지의 변화, 신고에 필요한 자료를 드려 추측 없이 가격을 정할 수 있게 합니다.",
-      order: ["cost", "compare", "clause", "data"],
+      order: ["cost", "compare", "clause", "roles", "data"],
     },
-    manufacturer: {
-      label: "완제품 제조사 (예시)",
+    risk: {
+      label: "위험·신뢰 중심",
+      why: "생산에 투입하거나 공급망 탄소를 관리하는 바이어예요. 배출 근거와 검증 상태를 먼저 보여 줘요.",
       headline: "Lower CBAM and supply risk with documented emissions data.",
       pitch: "Purchased steel and aluminium parts are part of your Scope 3 and CBAM exposure. We document the emissions basis, state its verification status, and fix how CBAM cost is shared.",
       headlineKo: "배출 근거 자료로 CBAM 비용과 공급 위험을 줄이세요.",
       pitchKo: "구매하는 철강·알루미늄 부품은 귀사의 Scope 3 배출과 CBAM 부담에 들어갑니다. 배출 산정 근거와 검증 상태를 문서로 드리고, CBAM 비용 분담 방식을 정해 둡니다.",
-      order: ["data", "cost", "clause", "compare"],
+      order: ["data", "cost", "clause", "roles", "compare"],
+    },
+    certainty: {
+      label: "비용 확정 중심",
+      why: "프로젝트 기간에 비용이 바뀌면 안 되는 바이어예요. 가격 조항으로 CBAM 비용을 고정하는 것부터 보여 줘요.",
+      headline: "Fix the CBAM cost for the life of your project.",
+      pitch: "CBAM rises every year to 2028. We quote it separately with a fixed share and a cap per tonne, so your project budget does not move with the default mark-up.",
+      headlineKo: "프로젝트 기간의 CBAM 비용을 미리 고정하세요.",
+      pitchKo: "CBAM은 2028년까지 해마다 오릅니다. CBAM을 단가와 따로 견적하고 분담률과 톤당 상한을 정해, 할증이 올라도 프로젝트 예산이 흔들리지 않게 합니다.",
+      order: ["clause", "cost", "compare", "roles", "data"],
     },
   };
+
+  function segmentFor(b = {}) {
+    if (b.purpose === "project" || b.industry === "construction") return "certainty";
+    if (b.esg || (b.purpose === "production" && b.industry === "manufacturer")) return "risk";
+    return "cost";
+  }
 
   const VERIFICATION = {
     none: { ko: "아직 없음", koLong: "아직 없음. 기본값이 적용됩니다.", en: "Not yet available. Default values apply." },
@@ -61,7 +85,7 @@
     return code === MARKET_PRICES.code ? MARKET_PRICES.prices[origin] ?? null : null;
   }
 
-  // state: { code, year, qty, ourPrice, rivals:[{origin, price, duty, include}], buyerType, company, buyer,
+  // state: { code, year, qty, ourPrice, rivals:[{origin, price, duty, include}], buyerProfile:{industry,purpose,exposure,esg}, roles, company, buyer,
   //          dataItems:{...bool}, verification, clause:{on, share(0~1), cap|null} }
   function build(state) {
     const now = K.cost({ cn: state.code, year: state.year, quarter: q(state.year) });
@@ -104,12 +128,34 @@
       comparisons: rivals.filter((r) => r.verdict),
       buyerComparisons: rivals.filter((r) => r.verdict && r.include),
       clause,
-      type: BUYER_TYPES[state.buyerType] || BUYER_TYPES.distributor,
+      segment: segmentFor(state.buyerProfile),
+      type: SEGMENTS[segmentFor(state.buyerProfile)],
+      lowExposure: !!(state.buyerProfile && state.buyerProfile.exposure === "low"),
+      roles: state.roles !== false,
       verification: VERIFICATION[state.verification] || VERIFICATION.none,
       dataProvided: Object.keys(DATA_ITEMS).filter((k) => state.dataItems && state.dataItems[k]).map((k) => DATA_ITEMS[k]),
       marketPricesApply: state.code === MARKET_PRICES.code,
     };
   }
 
-  return { YEARS, MARKET_PRICES, DEFAULT_RIVALS, BUYER_TYPES, VERIFICATION, DATA_ITEMS, defaultDuty, marketPrice, build };
+  // 규제 진단(TradeGuard 연계). 확인된 규정만 적는다. level: ok | warn | info
+  function regCheck(s, state) {
+    if (!s.ok) return [{ level: "warn", text: s.reason }];
+    const sectorKo = s.sector === "aluminium" ? "알루미늄" : "철강";
+    const items = [
+      { level: "ok", text: `CBAM 대상 품목이에요 (${sectorKo}).` },
+      { level: "ok", text: `한국산 공식 기본값 ${+s.defaultValue.toFixed(3)} tCO2e/톤${s.route ? ", 생산경로 " + s.route : ""}로 계산했어요.` },
+      state.buyerProfile && state.buyerProfile.exposure === "low"
+        ? { level: "warn", text: "바이어의 연간 CBAM 품목 수입이 50톤 이하면 CBAM이 면제될 수 있어요. 이 경우 비용 분담 요구의 근거가 약해요." }
+        : { level: "info", text: "바이어의 연간 CBAM 품목 수입이 50톤 이하면 면제될 수 있어요. 우리 물량만으로는 판단할 수 없어요." },
+      { level: "info", text: "실제 배출값은 EU 인정 검증을 받아야 쓸 수 있고, 첫 검증보고서는 2027년 1월부터 가능해요. 이 도구는 기본값만 씁니다." },
+      s.code.startsWith("731815")
+        ? { level: "ok", text: "한-EU FTA 관세 0% (TARIC에서 7318 15 하위코드 확인)." }
+        : { level: "info", text: "한-EU FTA 0%는 원산지 요건을 채워야 적용돼요. 이 코드의 세율은 TARIC에서 확인하세요." },
+      { level: "info", text: "바이어 신고를 도우려면 CN 코드별 물량, 원소재 밀 시트, 생산량을 준비하세요." },
+    ];
+    return items;
+  }
+
+  return { YEARS, MARKET_PRICES, DEFAULT_RIVALS, QUESTIONS, SEGMENTS, segmentFor, VERIFICATION, DATA_ITEMS, defaultDuty, marketPrice, build, regCheck };
 });
