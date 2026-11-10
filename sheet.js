@@ -23,21 +23,25 @@
       label: "유통사·수입상 (예시)",
       headline: "Know the CBAM cost of every tonne before you quote.",
       pitch: "As the EU importer you pay CBAM. We give you the cost per tonne, how it moves to 2028, and the data your declaration needs, so you can price without guessing.",
+      headlineKo: "톤마다 CBAM 비용을 미리 알고 견적하세요.",
+      pitchKo: "CBAM은 EU 수입자인 귀사가 냅니다. 톤당 비용, 2028년까지의 변화, 신고에 필요한 자료를 드려 추측 없이 가격을 정할 수 있게 합니다.",
       order: ["cost", "compare", "clause", "data"],
     },
     manufacturer: {
       label: "완제품 제조사 (예시)",
       headline: "Lower CBAM and supply risk with documented emissions data.",
       pitch: "Purchased steel and aluminium parts are part of your Scope 3 and CBAM exposure. We document the emissions basis, state its verification status, and fix how CBAM cost is shared.",
+      headlineKo: "배출 근거 자료로 CBAM 비용과 공급 위험을 줄이세요.",
+      pitchKo: "구매하는 철강·알루미늄 부품은 귀사의 Scope 3 배출과 CBAM 부담에 들어갑니다. 배출 산정 근거와 검증 상태를 문서로 드리고, CBAM 비용 분담 방식을 정해 둡니다.",
       order: ["data", "cost", "clause", "compare"],
     },
   };
 
   const VERIFICATION = {
-    none: { ko: "아직 없음", en: "Not yet available. Default values apply." },
-    self: { ko: "자체 산정", en: "Self-estimated (not verified)" },
-    pre: { ko: "사전검증", en: "Pre-verified by a third party (non-accredited)" },
-    accredited: { ko: "EU 인정 검증", en: "Verified by an EU-accredited verifier" },
+    none: { ko: "아직 없음", koLong: "아직 없음. 기본값이 적용됩니다.", en: "Not yet available. Default values apply." },
+    self: { ko: "자체 산정", koLong: "자체 산정 (검증 전)", en: "Self-estimated (not verified)" },
+    pre: { ko: "사전검증", koLong: "제3자 사전검증 (EU 인정 기관 아님)", en: "Pre-verified by a third party (non-accredited)" },
+    accredited: { ko: "EU 인정 검증", koLong: "EU 인정 검증기관의 검증 완료", en: "Verified by an EU-accredited verifier" },
   };
 
   const DATA_ITEMS = {

@@ -131,7 +131,8 @@ input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--primary); 
 .preview { position: sticky; top: 88px; max-height: calc(100vh - 112px); overflow-y: auto; overscroll-behavior: contain; padding: 0 8px 8px 0; scrollbar-gutter: stable; }
 .preview::-webkit-scrollbar { width: 8px; }
 .preview::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 4px; }
-.preview-label { position: sticky; top: 0; z-index: 1; background: var(--body-bg); font-size: 14px; font-weight: 600; padding-bottom: 12px; }
+.preview-label { position: sticky; top: 0; z-index: 2; background: var(--body-bg); font-size: 14px; font-weight: 600; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.preview-label .seg button { font-weight: 400; }
 .paper {
   background: #fff; color: #1f1f1f; border: 1px solid var(--split); border-radius: var(--radius-lg); box-shadow: var(--shadow);
   width: 100%; max-width: 794px; min-height: 1000px; padding: 48px 56px; font-size: 13px; line-height: 1.55; scroll-margin-top: 80px;

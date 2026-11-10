@@ -21,7 +21,7 @@
       rivals: S.DEFAULT_RIVALS.map((o) => rivalFor(code, o)),
       company: "", buyer: "", buyerType: "distributor",
       dataItems: { cn: true, mill: true, volume: true, installation: false },
-      verification: "none", clause: { on: true, share: 0.5, cap: 120 },
+      verification: "none", clause: { on: true, share: 0.5, cap: 120 }, lang: "ko",
     };
   }
 
@@ -100,6 +100,7 @@
     render(false);
   });
   $("print").addEventListener("click", () => window.print());
+  $("lang").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.lang = b.dataset.l; render(false); } });
 
   // ---------- 그리기 ----------
   function renderCompare(s) {
@@ -122,44 +123,81 @@
     }).join("");
   }
 
+  // 제안서 문구. 숫자와 구조는 같고 말만 바뀐다.
+  const TEXT = {
+    en: {
+      company: "Your company", buyer: "Buyer", from: "From", to: "To",
+      costH: "Your CBAM cost per tonne", perT: (y) => `${y} imports, per tonne`, certs: "certificates / t",
+      markupIn: (m, y) => `default mark-up ${m}% in ${y}`, perYear: (q) => `${q.toLocaleString("en-US")} t per year`, annual: "Annual volume", estimate: (y) => `${y} estimate`,
+      thYear: "Import year", thMarkup: "Mark-up", thCerts: "Certificates / t", thCost: "CBAM € / t",
+      costSrc: (dv, route, bm) => `Korea default value ${dv} tCO2e/t${route ? ", production route " + route : ""}, CBAM benchmark ${bm}, certificate price ${eur(82.32, 2)} (Q3 2026, published). Later years assume the same price.`,
+      compH: (y) => `Total landed cost vs. alternatives (${y})`, thOrigin: "Origin", thPrice: "Unit price", thDuty: "Duty", thTotal: "Total € / t",
+      korea: "Korea (us)", fta: "0% (EU–Korea FTA)", name: (c) => c.nameEn,
+      compSrc: (m) => `${m ? "Unit prices: " + S.MARKET_PRICES.source + ". " : ""}CBAM at official default values for every origin. Quality and lead time not included.`,
+      clauseH: "Proposed CBAM price clause",
+      clause: (sh, cap) => `Prices exclude CBAM. CBAM per tonne = certificates × certificate price. The supplier bears ${sh}% of it${cap != null ? `, capped at ${eur(cap)} per tonne` : ""}. If verified actual emissions are provided, the certificate count is recalculated.`,
+      thSupplier: "Supplier", thBuyer: "Buyer", capped: " (cap)",
+      dataH: "Emissions data we provide", tbd: "To be agreed.", verif: "Verification status:",
+      item: (d) => d.en, verifText: (v) => v.en, headline: (t) => t.headline, pitch: (t) => t.pitch,
+      footer: "Estimate based on EU default values (Implementing Regulations (EU) 2026/1740 and 2025/2620). Not a CBAM declaration and not legal advice. Actual emissions and carbon prices paid in Korea are not included.",
+    },
+    ko: {
+      company: "우리 회사", buyer: "바이어", from: "보내는 곳", to: "받는 곳",
+      costH: "톤당 CBAM 비용", perT: (y) => `${y}년 수입분, 톤당`, certs: "인증서 수 / 톤",
+      markupIn: (m, y) => `${y}년 기본값 할증 ${m}%`, perYear: (q) => `연간 ${q.toLocaleString("ko-KR")}톤`, annual: "연간 물량", estimate: (y) => `${y}년 추정`,
+      thYear: "수입 연도", thMarkup: "할증", thCerts: "인증서 수 / 톤", thCost: "CBAM € / 톤",
+      costSrc: (dv, route, bm) => `한국 기본값 ${dv} tCO2e/톤${route ? ", 생산경로 " + route : ""}, CBAM 벤치마크 ${bm}, 인증서 가격 ${eur(82.32, 2)}(2026년 3분기 공표). 2027년 이후는 같은 가격을 가정했습니다.`,
+      compH: (y) => `경쟁 원산지와 바이어 총비용 비교 (${y}년)`, thOrigin: "원산지", thPrice: "단가", thDuty: "관세", thTotal: "합계 € / 톤",
+      korea: "한국 (당사)", fta: "0% (한-EU FTA)", name: (c) => c.nameKo,
+      compSrc: (m) => `${m ? "단가: 2025년 독일 통관 평균(Eurostat Comext, CN 7318 15 88). " : ""}모든 원산지의 CBAM은 공식 기본값으로 계산했습니다. 품질과 납기는 반영하지 않았습니다.`,
+      clauseH: "CBAM 가격 조항 제안",
+      clause: (sh, cap) => `가격에는 CBAM이 포함되지 않습니다. 톤당 CBAM 비용은 인증서 수 × 인증서 가격으로 계산하며, 공급사는 그중 ${sh}%를 부담합니다${cap != null ? `(톤당 ${eur(cap)} 상한)` : ""}. 검증된 실제 배출값을 제공하면 인증서 수를 다시 계산합니다.`,
+      thSupplier: "공급사", thBuyer: "바이어", capped: " (상한)",
+      dataH: "제공하는 배출 자료", tbd: "협의해 정합니다.", verif: "검증 상태:",
+      item: (d) => d.ko, verifText: (v) => v.koLong, headline: (t) => t.headlineKo, pitch: (t) => t.pitchKo,
+      footer: "EU 기본값(시행규칙 (EU) 2026/1740, 2025/2620)에 따른 추정치입니다. CBAM 신고서나 법률 자문이 아닙니다. 실제 배출값과 한국에서 낸 탄소가격은 반영하지 않았습니다.",
+    },
+  };
+
   function sheetHTML(s) {
     if (!s.ok) return `<div class="empty">${esc(s.reason)}</div>`;
+    const L = TEXT[state.lang] || TEXT.en;
     const t = s.type, cur = s.current, today = new Date().toISOString().slice(0, 10);
-    const from = state.company.trim() || "Your company", to = state.buyer.trim() || "Buyer";
+    const from = state.company.trim() || L.company, to = state.buyer.trim() || L.buyer;
     const other = s.year === 2028 ? s.years[0] : s.years[2];
     const sections = {
-      cost: `<h3>Your CBAM cost per tonne</h3>
+      cost: `<h3>${L.costH}</h3>
         <div class="kpis">
-          <div class="kpi"><div class="label">${s.year} imports, per tonne</div><div class="big">${eur(cur.cost, 2)}</div><div class="sub">${cur.certificates.toFixed(4)} certificates / t</div></div>
-          <div class="kpi"><div class="label">${other.year} imports, per tonne</div><div class="big">${eur(other.cost)}</div><div class="sub">default mark-up ${Math.round(other.markup * 100)}% in ${other.year}</div></div>
-          <div class="kpi"><div class="label">${s.qty ? `${s.qty.toLocaleString("en-US")} t per year` : "Annual volume"}</div><div class="big">${s.total ? eur(s.total) : "–"}</div><div class="sub">${s.year} estimate</div></div>
+          <div class="kpi"><div class="label">${L.perT(s.year)}</div><div class="big">${eur(cur.cost, 2)}</div><div class="sub">${cur.certificates.toFixed(4)} ${L.certs}</div></div>
+          <div class="kpi"><div class="label">${L.perT(other.year)}</div><div class="big">${eur(other.cost)}</div><div class="sub">${L.markupIn(Math.round(other.markup * 100), other.year)}</div></div>
+          <div class="kpi"><div class="label">${s.qty ? L.perYear(s.qty) : L.annual}</div><div class="big">${s.total ? eur(s.total) : "–"}</div><div class="sub">${L.estimate(s.year)}</div></div>
         </div>
-        <table style="margin-top:12px"><thead><tr><th>Import year</th><th>Mark-up</th><th>Certificates / t</th><th>CBAM € / t</th></tr></thead><tbody>
+        <table style="margin-top:12px"><thead><tr><th>${L.thYear}</th><th>${L.thMarkup}</th><th>${L.thCerts}</th><th>${L.thCost}</th></tr></thead><tbody>
         ${s.years.map((y) => `<tr><td>${y.year}</td><td>${Math.round(y.markup * 100)}%</td><td>${y.certificates.toFixed(4)}</td><td>${eur(y.cost, 2)}</td></tr>`).join("")}
         </tbody></table>
-        <div class="src">Korea default value ${+s.defaultValue.toFixed(3)} tCO2e/t${s.route ? ", production route " + s.route : ""}, CBAM benchmark ${cur.benchmark}, certificate price ${eur(82.32, 2)} (Q3 2026, published). Later years assume the same price.</div>`,
-      compare: s.buyerComparisons.length ? `<h3>Total landed cost vs. alternatives (${s.year})</h3>
-        <table><thead><tr><th>Origin</th><th>Unit price</th><th>Duty</th><th>CBAM</th><th>Total € / t</th></tr></thead><tbody>
-        <tr class="ours"><td>Korea (us)</td><td>${eur(state.ourPrice)}</td><td>0% (EU–Korea FTA)</td><td>${eur(cur.cost)}</td><td>${eur(s.buyerComparisons[0].ourTotal)}</td></tr>
-        ${s.buyerComparisons.map((c) => `<tr><td>${esc(c.nameEn)}</td><td>${eur(c.price)}</td><td>${c.duty}%</td><td>${eur(c.cbam)}</td><td>${eur(c.rivalTotal)}</td></tr>`).join("")}
+        <div class="src">${L.costSrc(+s.defaultValue.toFixed(3), s.route, cur.benchmark)}</div>`,
+      compare: s.buyerComparisons.length ? `<h3>${L.compH(s.year)}</h3>
+        <table><thead><tr><th>${L.thOrigin}</th><th>${L.thPrice}</th><th>${L.thDuty}</th><th>CBAM</th><th>${L.thTotal}</th></tr></thead><tbody>
+        <tr class="ours"><td>${L.korea}</td><td>${eur(state.ourPrice)}</td><td>${L.fta}</td><td>${eur(cur.cost)}</td><td>${eur(s.buyerComparisons[0].ourTotal)}</td></tr>
+        ${s.buyerComparisons.map((c) => `<tr><td>${esc(L.name(c))}</td><td>${eur(c.price)}</td><td>${c.duty}%</td><td>${eur(c.cbam)}</td><td>${eur(c.rivalTotal)}</td></tr>`).join("")}
         </tbody></table>
-        <div class="src">${s.marketPricesApply ? "Unit prices: " + S.MARKET_PRICES.source + ". " : ""}CBAM at official default values for every origin. Quality and lead time not included.</div>` : "",
-      clause: s.clause ? `<h3>Proposed CBAM price clause</h3>
-        <div class="clause">Prices exclude CBAM. CBAM per tonne = certificates × certificate price. The supplier bears ${Math.round(state.clause.share * 100)}% of it${state.clause.cap != null ? `, capped at ${eur(state.clause.cap)} per tonne` : ""}. If verified actual emissions are provided, the certificate count is recalculated.</div>
-        <table><thead><tr><th>Import year</th><th>CBAM € / t</th><th>Supplier</th><th>Buyer</th></tr></thead><tbody>
-        ${s.clause.map((c) => `<tr><td>${c.year}</td><td>${eur(c.total)}</td><td>${eur(c.seller)}${c.capped ? " (cap)" : ""}</td><td>${eur(c.buyer)}</td></tr>`).join("")}
+        <div class="src">${L.compSrc(s.marketPricesApply)}</div>` : "",
+      clause: s.clause ? `<h3>${L.clauseH}</h3>
+        <div class="clause">${L.clause(Math.round(state.clause.share * 100), state.clause.cap)}</div>
+        <table><thead><tr><th>${L.thYear}</th><th>${L.thCost}</th><th>${L.thSupplier}</th><th>${L.thBuyer}</th></tr></thead><tbody>
+        ${s.clause.map((c) => `<tr><td>${c.year}</td><td>${eur(c.total)}</td><td>${eur(c.seller)}${c.capped ? L.capped : ""}</td><td>${eur(c.buyer)}</td></tr>`).join("")}
         </tbody></table>` : "",
-      data: `<h3>Emissions data we provide</h3>
-        ${s.dataProvided.length ? `<ul>${s.dataProvided.map((d) => `<li>${esc(d.en)}</li>`).join("")}</ul>` : "<p>To be agreed.</p>"}
-        <div class="status"><strong>Verification status:</strong> ${esc(s.verification.en)}</div>`,
+      data: `<h3>${L.dataH}</h3>
+        ${s.dataProvided.length ? `<ul>${s.dataProvided.map((d) => `<li>${esc(L.item(d))}</li>`).join("")}</ul>` : `<p>${L.tbd}</p>`}
+        <div class="status"><strong>${L.verif}</strong> ${esc(L.verifText(s.verification))}</div>`,
     };
     return `<header>
-        <div><div class="eyebrow">Buyer Value Sheet · EU CBAM</div><h1>${esc(t.headline)}</h1></div>
-        <div class="meta">From <strong>${esc(from)}</strong><br>To <strong>${esc(to)}</strong><br>CN ${fmtCode(s.code)}<br>${today}</div>
+        <div><div class="eyebrow">Buyer Value Sheet · EU CBAM</div><h1>${esc(L.headline(t))}</h1></div>
+        <div class="meta">${L.from} <strong>${esc(from)}</strong><br>${L.to} <strong>${esc(to)}</strong><br>CN ${fmtCode(s.code)}<br>${today}</div>
       </header>
-      <p class="pitch">${esc(t.pitch)}</p>
+      <p class="pitch">${esc(L.pitch(t))}</p>
       ${t.order.map((k) => sections[k]).join("")}
-      <footer>Estimate based on EU default values (Implementing Regulations (EU) 2026/1740 and 2025/2620). Not a CBAM declaration and not legal advice. Actual emissions and carbon prices paid in Korea are not included.</footer>`;
+      <footer>${L.footer}</footer>`;
   }
 
   function render(rebuildCompare = true) {
@@ -183,6 +221,8 @@
       : "경쟁국 CBAM은 공식 기본값으로 자동 계산돼요. 단가와 관세율은 직접 넣어 주세요.";
     if (rebuildCompare) renderCompare(s);
     else updateVerdicts(s);
+    document.querySelectorAll("#lang button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.l === state.lang)));
+    $("sheet").lang = state.lang;
     $("sheet").innerHTML = sheetHTML(s);
     save();
   }
