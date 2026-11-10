@@ -26,12 +26,12 @@
 
 <div class="shell">
 <aside class="sider" aria-label="단계">
-  <nav class="menu">
-    <a href="#s1" class="active"><span class="num">1</span>제품 진단</a>
-    <a href="#s2"><span class="num">2</span>바이어</a>
-    <a href="#s3"><span class="num">3</span>가치 계산</a>
-    <a href="#s4"><span class="num">4</span>제공할 자료</a>
-    <a href="#sheet"><span class="num">→</span>제안서</a>
+  <nav class="menu" id="tabs">
+    <a href="#s1"><span class="num">1</span>제품 진단</a>
+    <a href="#s2"><span class="num">2</span>바이어 진단</a>
+    <a href="#s3"><span class="num">3</span>가격 비교</a>
+    <a href="#s4"><span class="num">4</span>제안서</a>
+    <a href="#s5"><span class="num">5</span>협상 메일</a>
   </nav>
   <p class="sider-note">공식 기본값 기준 · 2026년 3분기 인증서 가격 €82.32</p>
 </aside>
@@ -55,7 +55,7 @@
     </section>
 
     <section class="step" id="s2">
-      <h2><span class="num">2</span>바이어</h2>
+      <h2><span class="num">2</span>바이어 진단</h2>
       <label class="field"><span>우리 회사명</span><input id="company" type="text" maxlength="60" placeholder="예: OO볼트(주)"></label>
       <label class="field"><span>바이어 회사명</span><input id="buyer" type="text" maxlength="60" placeholder="예: Muster GmbH"></label>
       <div id="buyerProfile"></div>
@@ -63,7 +63,7 @@
     </section>
 
     <section class="step" id="s3">
-      <h2><span class="num">3</span>가치 계산 <small>내부용</small></h2>
+      <h2><span class="num">3</span>가격 비교 <small>내부용</small></h2>
       <label class="field"><span>우리 단가 (€/톤, 관세 0%: 한-EU FTA)</span>
         <input id="ourPrice" type="number" min="0" step="1" inputmode="numeric">
       </label>
@@ -75,8 +75,21 @@
         <label class="field"><span>우리 분담률 <output id="shareOut"></output></span><input id="share" type="range" min="0" max="100" step="5"></label>
         <label class="field"><span>톤당 상한 (€, 비우면 없음)</span><input id="cap" type="number" min="0" step="1"></label>
       </div>
-      <div class="mail">
-        <div class="mail-h">협상 대응 메일 초안 <small>바이어가 CBAM 분담을 요구할 때</small></div>
+    </section>
+
+    <section class="step" id="s4">
+      <h2><span class="num">4</span>제안서</h2>
+      <div class="field" id="dataItems"></div>
+      <label class="check"><input type="checkbox" id="rolesOn"> 바이어 회사 안 역할별 핵심 넣기</label>
+      <label class="field"><span>배출 데이터 검증 상태</span><select id="verification"></select></label>
+      <button type="button" class="btn primary wide" id="print">제안서 PDF로 저장</button>
+      <p class="hint">인쇄 창에서 "PDF로 저장"을 고르세요.</p>
+    </section>
+
+    <section class="step" id="s5">
+      <h2><span class="num">5</span>협상 메일 <small>바이어가 CBAM 분담을 요구할 때</small></h2>
+      <p class="hint" style="margin-top:-8px">3단계의 판정과 가격 조항에 맞춰 답장 초안을 만들어요. 언어는 제안서 언어를 따라요.</p>
+      <div>
         <label class="field"><span>비교 기준</span><select id="mailRival"></select></label>
         <input id="mailSubject" type="text" readonly aria-label="메일 제목">
         <textarea id="mailBody" rows="10" readonly aria-label="메일 본문"></textarea>
@@ -84,14 +97,7 @@
       </div>
     </section>
 
-    <section class="step" id="s4">
-      <h2><span class="num">4</span>제공할 자료</h2>
-      <div class="field" id="dataItems"></div>
-      <label class="check"><input type="checkbox" id="rolesOn"> 바이어 회사 안 역할별 핵심 넣기</label>
-      <label class="field"><span>배출 데이터 검증 상태</span><select id="verification"></select></label>
-      <button type="button" class="btn primary wide" id="print">제안서 PDF로 저장</button>
-      <p class="hint">인쇄 창에서 "PDF로 저장"을 고르세요.</p>
-    </section>
+    <div class="stepnav"><button type="button" class="btn" id="prevStep">이전</button><button type="button" class="btn primary" id="nextStep">다음</button></div>
 
     <footer class="method">
       <p>기본값 경로: 인증서 수 = 기본값 × (1 + 할증) − 벤치마크 × CBAM 계수. 근거 IR 2026/1740, IR 2025/2620, Directive 2003/87, 인증서 가격은 집행위 공표값(2026년 3분기 €82.32). 기본값·벤치마크 표는 아일랜드 EPA CBAM 계산기 V3(2026-09)에서 가져왔습니다.</p>

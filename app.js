@@ -320,16 +320,22 @@
   $("install").addEventListener("click", async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; $("install").hidden = true; });
 })();
 
-// 왼쪽 메뉴: 보고 있는 단계를 표시한다.
+// 단계 탭: 한 번에 한 단계만 보여 준다. 오른쪽 제안서는 늘 보인다.
 (function () {
-  const links = [...document.querySelectorAll(".menu a")];
-  if (!("IntersectionObserver" in window) || !links.length) return;
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach((en) => {
-      if (!en.isIntersecting) return;
-      links.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id));
-    });
-  }, { rootMargin: "-80px 0px -60% 0px" });
-  // 제안서 미리보기는 처음부터 화면에 걸려 있어서 입력 단계만 관찰한다.
-  document.querySelectorAll(".step[id]").forEach((t) => io.observe(t));
+  const links = [...document.querySelectorAll("#tabs a")];
+  const ids = links.map((a) => a.getAttribute("href").slice(1));
+  let cur = 0;
+  try { cur = Math.max(0, ids.indexOf(sessionStorage.getItem("cbam-tab"))); } catch { /* 기억 못 해도 된다 */ }
+  function show(i) {
+    cur = Math.min(ids.length - 1, Math.max(0, i));
+    ids.forEach((id, k) => document.getElementById(id).classList.toggle("on", k === cur));
+    links.forEach((a, k) => { a.classList.toggle("active", k === cur); a.setAttribute("aria-current", k === cur ? "step" : "false"); });
+    document.getElementById("prevStep").disabled = cur === 0;
+    document.getElementById("nextStep").hidden = cur === ids.length - 1;
+    try { sessionStorage.setItem("cbam-tab", ids[cur]); } catch { /* 무시 */ }
+  }
+  links.forEach((a, k) => a.addEventListener("click", (e) => { e.preventDefault(); show(k); }));
+  document.getElementById("prevStep").addEventListener("click", () => { show(cur - 1); window.scrollTo({ top: 0 }); });
+  document.getElementById("nextStep").addEventListener("click", () => { show(cur + 1); window.scrollTo({ top: 0 }); });
+  show(cur);
 })();
