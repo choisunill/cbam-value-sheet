@@ -46,7 +46,8 @@
   }
 
   function codes() {
-    return Object.keys(C.bm).map((cn) => ({ cn, sector: C.bmSector[cn], desc: C.bmDesc[cn] }));
+    // 철광석(2601) 같은 원료는 빼고 철강·알루미늄 제품(72·73·76류)만
+    return Object.keys(C.bm).filter((cn) => /^(72|73|76)/.test(cn)).map((cn) => ({ cn, sector: C.bmSector[cn], desc: C.bmDesc[cn] }));
   }
 
   // 한 원산지·코드·연도의 기본값 비용. 계산할 수 없으면 reason을 돌려준다.

@@ -33,7 +33,28 @@
 
   // ---------- 입력 화면 만들기 ----------
   const sectorKo = { steel: "철강", aluminium: "알루미늄" };
-  $("codeList").innerHTML = ALL.map((c) => `<option value="${fmtCode(c.cn)}">${sectorKo[c.sector]} · ${esc(c.desc.slice(0, 90))}</option>`).join("");
+  // CN 코드 단계 선택: 호(4자리) → 소호(6자리) → 8자리
+  const DESC = (window.CBAM_CATALOG_DATA && window.CBAM_CATALOG_DATA.dvDesc) || {};
+  const short = (t, n = 70) => (t.length > n ? t.slice(0, n - 1) + "…" : t);
+  const labelFor = (prefix) => DESC[prefix] || ALL.find((c) => c.cn.startsWith(prefix)).desc;
+  const uniq = (arr) => [...new Set(arr)];
+  const optHTML = (code, text) => `<option value="${code}">${fmtCode(code).replace(/^(\d{4})(\d{2})$/, "$1 $2")} · ${esc(short(text))}</option>`;
+  function fillH4() {
+    $("h4").innerHTML = ["steel", "aluminium"].map((sec) =>
+      `<optgroup label="${sectorKo[sec]}">${uniq(ALL.filter((c) => c.sector === sec).map((c) => c.cn.slice(0, 4))).map((h) => optHTML(h, labelFor(h))).join("")}</optgroup>`).join("");
+  }
+  function fillH6(h4) {
+    $("h6").innerHTML = uniq(ALL.filter((c) => c.cn.startsWith(h4)).map((c) => c.cn.slice(0, 6))).map((h) => optHTML(h, labelFor(h))).join("");
+  }
+  function fillCn8(h6) {
+    $("cn8").innerHTML = ALL.filter((c) => c.cn.startsWith(h6)).map((c) => optHTML(c.cn, c.desc)).join("");
+  }
+  function showCode(cn) {
+    fillH4(); $("h4").value = cn.slice(0, 4);
+    fillH6(cn.slice(0, 4)); $("h6").value = cn.slice(0, 6);
+    fillCn8(cn.slice(0, 6)); $("cn8").value = cn;
+  }
+  fillH4();
   $("year").innerHTML = S.YEARS.map((y) => `<button type="button" role="radio" data-y="${y}">${y}</button>`).join("");
   $("buyerType").innerHTML = Object.entries(S.BUYER_TYPES).map(([k, t]) =>
     `<button type="button" role="radio" data-k="${k}"><strong>${esc(t.label)}</strong><span>${esc(t.headline)}</span></button>`).join("");
@@ -49,7 +70,7 @@
   }
 
   function syncInputs() {
-    $("code").value = fmtCode(state.code);
+    showCode(state.code);
     $("qty").value = Number.isFinite(state.qty) ? state.qty : "";
     $("company").value = state.company;
     $("buyer").value = state.buyer;
@@ -63,15 +84,17 @@
   }
 
   // ---------- 이벤트 ----------
-  $("code").addEventListener("input", (e) => {
-    const cn = e.target.value.replace(/\D/g, "");
-    if (cn.length !== 8 || !BY_CODE[cn]) { $("codeDesc").textContent = cn.length >= 4 ? "목록에서 8자리 코드를 골라 주세요." : ""; return; }
-    if (cn === state.code) return;
+  // 앞 단계를 바꾸면 뒤 단계는 첫 항목으로 맞춘다.
+  $("h4").addEventListener("change", (e) => { fillH6(e.target.value); fillCn8($("h6").value); setCode($("cn8").value); });
+  $("h6").addEventListener("change", (e) => { fillCn8(e.target.value); setCode($("cn8").value); });
+  $("cn8").addEventListener("change", (e) => setCode(e.target.value));
+  function setCode(cn) {
+    if (!BY_CODE[cn] || cn === state.code) return;
     state.code = cn;
     state.rivals = state.rivals.map((r) => rivalFor(cn, r.origin));
     state.ourPrice = cn === S.MARKET_PRICES.code ? S.MARKET_PRICES.ours : NaN;
     syncInputs(); render();
-  });
+  }
   $("year").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.year = Number(b.dataset.y); render(); } });
   $("buyerType").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.buyerType = b.dataset.k; render(); } });
   [["qty", "qty"], ["ourPrice", "ourPrice"]].forEach(([id, k]) => $(id).addEventListener("input", (e) => { state[k] = num(e.target.value); render(); }));

@@ -40,10 +40,11 @@
 
     <section class="step" id="s1">
       <h2><span class="num">1</span>제품 진단</h2>
-      <label class="field"><span>CN 코드 (철강·알루미늄, 코드나 영문 품명으로 검색)</span>
-        <input id="code" type="text" list="codeList" inputmode="search" placeholder="예: 7318 15 88, bolt, aluminium sheet">
-        <datalist id="codeList"></datalist>
-      </label>
+      <div class="field"><span>CN 코드 (호 4자리 → 소호 6자리 → 8자리 순서로 고르기)</span>
+        <select id="h4" aria-label="호 4자리"></select>
+        <select id="h6" aria-label="소호 6자리"></select>
+        <select id="cn8" aria-label="CN 8자리"></select>
+      </div>
       <p class="hint" id="codeDesc"></p>
       <div class="coverage" id="coverage" role="status"></div>
       <div class="field"><span>수입 연도</span>
