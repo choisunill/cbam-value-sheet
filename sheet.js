@@ -1,15 +1,14 @@
 // 바이어 제안서(Buyer Value Sheet) 내용을 만드는 순수 함수. 화면과 분리해 테스트한다.
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./catalog.js"), require("./negotiation.js"), require("./prices-data.js"));
-  } else root.CBAM_SHEET = factory(root.CBAM_CATALOG, root.CBAM_NEGOTIATION, root.CBAM_PRICES);
-})(typeof globalThis !== "undefined" ? globalThis : this, function (K, N, PRICES) {
+    module.exports = factory(require("./catalog.js"), require("./negotiation.js"), require("./prices-data.js"), require("./duty-data.js"));
+  } else root.CBAM_SHEET = factory(root.CBAM_CATALOG, root.CBAM_NEGOTIATION, root.CBAM_PRICES, root.CBAM_DUTY);
+})(typeof globalThis !== "undefined" ? globalThis : this, function (K, N, PRICES, DUTY) {
   const YEARS = [2026, 2027, 2028];
 
   // 시장 평균 단가: 2025년 독일 수입 평균(Eurostat Comext, prices-data.js). 물량 10톤 미만인 원산지·코드는 없다.
   const MARKET_PRICES = { code: "73181588", source: "Eurostat Comext, 2025 Germany import average" };
   // 경쟁국 관세율(%) 기본값. TARIC에서 확인한 7318 15 88 기준, 대만은 MFN 해석. 다른 코드는 사용자가 확인한다.
-  const DUTY_7318 = { Taiwan: 3.7, India: 3.7, "Türkiye": 0, "Viet Nam": 0, Japan: 0 }; // 중국은 일부 코드에 반덤핑관세(잔여 86.5%)가 있어 비워 둔다
   const DEFAULT_RIVALS = ["Taiwan", "India", "Türkiye", "Viet Nam", "China", "Japan"];
 
   // 바이어 진단(STP). 세 질문의 답으로 세그먼트를 정하고, 세그먼트가 제안서의 강조점과 순서를 정한다.
@@ -73,9 +72,14 @@
   const q = (year) => (year === 2026 ? 3 : undefined);
 
   // 우리 단가를 넣으면 경쟁국의 관세율 기본값을 채워 주는 데 쓴다.
+  // 관세율(%): EU TARIC 기준(duty-data.js). 반덤핑·상계관세·수입금지가 걸린 원산지와 자료가 없는 코드는 null.
   function defaultDuty(code, origin) {
-    return code.startsWith("731815") && DUTY_7318[origin] != null ? DUTY_7318[origin] : null;
+    const d = DUTY[code];
+    if (!d || d.x.includes(origin)) return null;
+    return origin in d.p ? d.p[origin] : d.b;
   }
+  // 무역구제 조치가 걸려 세율을 비워 둔 원산지인지
+  function dutyFlag(code, origin) { return !!(DUTY[code] && DUTY[code].x.includes(origin)); }
   function marketPrice(code, origin) {
     return (PRICES[code] && PRICES[code][origin]) ?? null;
   }
@@ -145,13 +149,16 @@
         ? { level: "warn", text: "바이어의 연간 CBAM 품목 수입이 50톤 이하면 CBAM이 면제될 수 있어요. 이 경우 비용 분담 요구의 근거가 약해요." }
         : { level: "info", text: "바이어의 연간 CBAM 품목 수입이 50톤 이하면 면제될 수 있어요. 우리 물량만으로는 판단할 수 없어요." },
       { level: "info", text: "실제 배출값은 EU 인정 검증을 받아야 쓸 수 있고, 첫 검증보고서는 2027년 1월부터 가능해요. 이 도구는 기본값만 씁니다." },
-      s.code.startsWith("731815")
-        ? { level: "ok", text: "한-EU FTA 관세 0% (TARIC에서 7318 15 하위코드 확인)." }
-        : { level: "info", text: "한-EU FTA 0%는 원산지 요건을 채워야 적용돼요. 이 코드의 세율은 TARIC에서 확인하세요." },
+      dutyFlag(s.code, K.KOREA)
+        ? { level: "warn", text: "이 코드는 한국산에도 반덤핑 등 무역구제 조치가 걸려 있을 수 있어요. TARIC에서 확인하세요. 비교표의 한국 관세 0%가 맞지 않을 수 있어요." }
+        : defaultDuty(s.code, K.KOREA) === 0
+          ? { level: "ok", text: "한국산 관세 0% (EU TARIC 조회, 한-EU FTA는 원산지 요건을 채워야 적용)." }
+          : { level: "info", text: "이 코드의 한국산 관세율 자료가 없어요. TARIC에서 확인하세요." },
+      ...(DUTY[s.code] && DUTY[s.code].q ? [{ level: "warn", text: `철강 관세할당(쿼터)을 넘는 물량에는 추가관세 ${DUTY[s.code].q}%가 붙어요. 비교표는 쿼터 안 물량 기준이에요.` }] : []),
       { level: "info", text: "바이어 신고를 도우려면 CN 코드별 물량, 원소재 밀 시트, 생산량을 준비하세요." },
     ];
     return items;
   }
 
-  return { YEARS, MARKET_PRICES, DEFAULT_RIVALS, QUESTIONS, SEGMENTS, segmentFor, VERIFICATION, DATA_ITEMS, defaultDuty, marketPrice, build, regCheck };
+  return { YEARS, MARKET_PRICES, DEFAULT_RIVALS, QUESTIONS, SEGMENTS, segmentFor, VERIFICATION, DATA_ITEMS, defaultDuty, dutyFlag, marketPrice, build, regCheck };
 });

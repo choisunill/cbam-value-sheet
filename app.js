@@ -153,7 +153,7 @@
         <div class="top"><strong>${esc(r.nameKo)}산과 비교</strong>
           <span><label class="check" style="margin:0;display:inline-flex"><input type="checkbox" data-i="${i}" data-k="include" ${r.include ? "checked" : ""} ${r.verdict ? "" : "disabled"}> 제안서에 넣기</label>
           <button type="button" class="remove" data-i="${i}" aria-label="${esc(r.nameKo)} 빼기">✕</button></span></div>
-        <div class="cbam">${r.cbam != null ? `CBAM ${eur(r.cbam)}/t · 공식 기본값 ${+r.defaultValue.toFixed(3)} tCO2e/t` : ""}${r.origin === "China" && state.code.startsWith("7318") ? " · 반덤핑관세가 있을 수 있어요. 관세율을 TARIC에서 확인해 넣어 주세요." : ""}</div>
+        <div class="cbam">${r.cbam != null ? `CBAM ${eur(r.cbam)}/t · 공식 기본값 ${+r.defaultValue.toFixed(3)} tCO2e/t` : ""}${S.dutyFlag(state.code, r.origin) ? " · 반덤핑·상계관세 등이 걸려 있어요. 관세율을 TARIC에서 확인해 넣어 주세요." : ""}</div>
         <div class="inputs">
           <input type="number" min="0" step="1" data-i="${i}" data-k="price" value="${Number.isFinite(r.price) ? r.price : ""}" placeholder="단가 €/t" aria-label="${esc(r.nameKo)} 단가">
           <input type="number" min="0" step="0.1" data-i="${i}" data-k="duty" value="${Number.isFinite(r.duty) ? r.duty : ""}" placeholder="관세 %" aria-label="${esc(r.nameKo)} 관세율 %">

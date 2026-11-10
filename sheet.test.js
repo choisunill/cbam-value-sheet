@@ -88,3 +88,14 @@ test("협상 메일: 판정별 문장과 숫자", () => {
   const non = M.email(s, { ...tw, verdict: "nonprice" }, { lang: "en", clause: base.clause });
   assert.doesNotMatch(non.body, /€2,377/); // 가격 외 경쟁일 때 경쟁국 총비용을 바이어에게 알리지 않는다
 });
+
+test("관세율: 조사로 확인한 값과 같다 (7318 15 88)", () => {
+  assert.strictEqual(S.defaultDuty("73181588", "Taiwan"), 3.7);
+  assert.strictEqual(S.defaultDuty("73181588", "India"), 3.7);
+  assert.strictEqual(S.defaultDuty("73181588", "Türkiye"), 0);
+  assert.strictEqual(S.defaultDuty("73181588", "Viet Nam"), 0);
+  assert.strictEqual(S.defaultDuty("73181588", "Korea, Republic of (South Korea)"), 0);
+  assert.strictEqual(S.defaultDuty("73181588", "China"), null); // 반덤핑
+  assert.ok(S.dutyFlag("73181588", "China"));
+  assert.strictEqual(S.defaultDuty("72082500", "India"), 0); // 열연, 기본세율 0%
+});
