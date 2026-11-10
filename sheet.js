@@ -1,20 +1,15 @@
 // 바이어 제안서(Buyer Value Sheet) 내용을 만드는 순수 함수. 화면과 분리해 테스트한다.
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./catalog.js"), require("./negotiation.js"));
-  } else root.CBAM_SHEET = factory(root.CBAM_CATALOG, root.CBAM_NEGOTIATION);
-})(typeof globalThis !== "undefined" ? globalThis : this, function (K, N) {
+    module.exports = factory(require("./catalog.js"), require("./negotiation.js"), require("./prices-data.js"));
+  } else root.CBAM_SHEET = factory(root.CBAM_CATALOG, root.CBAM_NEGOTIATION, root.CBAM_PRICES);
+})(typeof globalThis !== "undefined" ? globalThis : this, function (K, N, PRICES) {
   const YEARS = [2026, 2027, 2028];
 
-  // 2025년 독일 7318 15 88 통관 평균 단가(Eurostat Comext). 다른 코드에는 쓰지 않는다.
-  const MARKET_PRICES = {
-    code: "73181588",
-    source: "Eurostat Comext, 2025 Germany import average, CN 7318 15 88",
-    ours: 2064,
-    prices: { Taiwan: 2161, India: 2158, "Türkiye": 3137, "Viet Nam": 1428 },
-  };
+  // 시장 평균 단가: 2025년 독일 수입 평균(Eurostat Comext, prices-data.js). 물량 10톤 미만인 원산지·코드는 없다.
+  const MARKET_PRICES = { code: "73181588", source: "Eurostat Comext, 2025 Germany import average" };
   // 경쟁국 관세율(%) 기본값. TARIC에서 확인한 7318 15 88 기준, 대만은 MFN 해석. 다른 코드는 사용자가 확인한다.
-  const DUTY_7318 = { Taiwan: 3.7, India: 3.7, "Türkiye": 0, "Viet Nam": 0, China: 3.7, Japan: 0 };
+  const DUTY_7318 = { Taiwan: 3.7, India: 3.7, "Türkiye": 0, "Viet Nam": 0, Japan: 0 }; // 중국은 일부 코드에 반덤핑관세(잔여 86.5%)가 있어 비워 둔다
   const DEFAULT_RIVALS = ["Taiwan", "India", "Türkiye", "Viet Nam", "China", "Japan"];
 
   // 바이어 진단(STP). 세 질문의 답으로 세그먼트를 정하고, 세그먼트가 제안서의 강조점과 순서를 정한다.
@@ -82,7 +77,7 @@
     return code.startsWith("731815") && DUTY_7318[origin] != null ? DUTY_7318[origin] : null;
   }
   function marketPrice(code, origin) {
-    return code === MARKET_PRICES.code ? MARKET_PRICES.prices[origin] ?? null : null;
+    return (PRICES[code] && PRICES[code][origin]) ?? null;
   }
 
   // state: { code, year, qty, ourPrice, rivals:[{origin, price, duty, include}], buyerProfile:{industry,purpose,exposure,esg}, roles, company, buyer,
@@ -134,7 +129,8 @@
       roles: state.roles !== false,
       verification: VERIFICATION[state.verification] || VERIFICATION.none,
       dataProvided: Object.keys(DATA_ITEMS).filter((k) => state.dataItems && state.dataItems[k]).map((k) => DATA_ITEMS[k]),
-      marketPricesApply: state.code === MARKET_PRICES.code,
+      // 제안서에 넣은 단가가 모두 시장 평균 그대로일 때만 출처를 적는다
+      marketPricesApply: state.ourPrice === marketPrice(state.code, K.KOREA) && rivals.filter((r) => r.verdict && r.include).every((r) => r.price === marketPrice(state.code, r.origin)),
     };
   }
 

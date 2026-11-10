@@ -27,9 +27,19 @@ test("대만 대비 판정은 가격 유지(우리 €2,269 vs 대만 €2,377),
   assert.deepStrictEqual(s.buyerComparisons.map((c) => c.origin), ["Taiwan"]);
 });
 
-test("단가가 없는 경쟁국도 CBAM 비용은 나온다 (중국)", () => {
-  const cn = S.build(base).rivals.find((r) => r.origin === "China");
+test("단가가 없는 경쟁국도 CBAM 비용은 나온다", () => {
+  const st = { ...base, rivals: [{ origin: "China", price: NaN, duty: 3.7, include: false }] };
+  const cn = S.build(st).rivals[0];
   assert.ok(cn.cbam > 400 && !cn.verdict);
+});
+
+test("시장 단가: 검산값과 같고(한국 2064, 대만 2161), 다른 코드도 채워진다", () => {
+  const KR = "Korea, Republic of (South Korea)";
+  assert.strictEqual(S.marketPrice("73181588", KR), 2064);
+  assert.strictEqual(S.marketPrice("73181588", "Taiwan"), 2161);
+  assert.strictEqual(S.marketPrice("73181588", "Viet Nam"), 1428);
+  assert.ok(S.marketPrice("73181520", "India") > 0);
+  assert.strictEqual(S.marketPrice("73181520", KR), null); // 한국산 0.2톤: 10톤 미만이라 없음
 });
 
 test("가격 조항 상한은 2028년에 걸린다", () => {

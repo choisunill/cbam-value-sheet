@@ -17,7 +17,7 @@
   function freshState() {
     const code = S.MARKET_PRICES.code;
     return {
-      code, year: 2026, qty: 100, ourPrice: S.MARKET_PRICES.ours,
+      code, year: 2026, qty: 100, ourPrice: S.marketPrice(code, K.KOREA) ?? NaN,
       rivals: S.DEFAULT_RIVALS.map((o) => rivalFor(code, o)),
       company: "", buyer: "", buyerProfile: { industry: "distributor", purpose: "resale", exposure: "unknown", esg: false }, roles: true,
       dataItems: { cn: true, mill: true, volume: true, installation: false },
@@ -87,14 +87,16 @@
 
   // ---------- 이벤트 ----------
   // 앞 단계를 바꾸면 뒤 단계는 첫 항목으로 맞춘다.
-  $("h4").addEventListener("change", (e) => { fillH6(e.target.value); fillCn8($("h6").value); setCode($("cn8").value); });
-  $("h6").addEventListener("change", (e) => { fillCn8(e.target.value); setCode($("cn8").value); });
+  // 앞 칸을 바꾸면 그 안에서 한국산 시장 단가가 있는 첫 코드를 고른다(없으면 첫 코드).
+  const bestIn = (prefix) => { const list = ALL.filter((c) => c.cn.startsWith(prefix)); return (list.find((c) => S.marketPrice(c.cn, K.KOREA) != null) || list[0]).cn; };
+  $("h4").addEventListener("change", (e) => setCode(bestIn(e.target.value)));
+  $("h6").addEventListener("change", (e) => setCode(bestIn(e.target.value)));
   $("cn8").addEventListener("change", (e) => setCode(e.target.value));
   function setCode(cn) {
     if (!BY_CODE[cn] || cn === state.code) return;
     state.code = cn;
     state.rivals = state.rivals.map((r) => rivalFor(cn, r.origin));
-    state.ourPrice = cn === S.MARKET_PRICES.code ? S.MARKET_PRICES.ours : NaN;
+    state.ourPrice = S.marketPrice(cn, K.KOREA) ?? NaN;
     syncInputs(); render();
   }
   $("year").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.year = Number(b.dataset.y); render(); } });
@@ -151,7 +153,7 @@
         <div class="top"><strong>${esc(r.nameKo)}산과 비교</strong>
           <span><label class="check" style="margin:0;display:inline-flex"><input type="checkbox" data-i="${i}" data-k="include" ${r.include ? "checked" : ""} ${r.verdict ? "" : "disabled"}> 제안서에 넣기</label>
           <button type="button" class="remove" data-i="${i}" aria-label="${esc(r.nameKo)} 빼기">✕</button></span></div>
-        <div class="cbam">${r.cbam != null ? `CBAM ${eur(r.cbam)}/t · 공식 기본값 ${+r.defaultValue.toFixed(3)} tCO2e/t` : ""}</div>
+        <div class="cbam">${r.cbam != null ? `CBAM ${eur(r.cbam)}/t · 공식 기본값 ${+r.defaultValue.toFixed(3)} tCO2e/t` : ""}${r.origin === "China" && state.code.startsWith("7318") ? " · 반덤핑관세가 있을 수 있어요. 관세율을 TARIC에서 확인해 넣어 주세요." : ""}</div>
         <div class="inputs">
           <input type="number" min="0" step="1" data-i="${i}" data-k="price" value="${Number.isFinite(r.price) ? r.price : ""}" placeholder="단가 €/t" aria-label="${esc(r.nameKo)} 단가">
           <input type="number" min="0" step="0.1" data-i="${i}" data-k="duty" value="${Number.isFinite(r.duty) ? r.duty : ""}" placeholder="관세 %" aria-label="${esc(r.nameKo)} 관세율 %">
@@ -186,7 +188,7 @@
       costSrc: (dv, route, bm) => `Korea default value ${dv} tCO2e/t${route ? ", production route " + route : ""}, CBAM benchmark ${bm}, certificate price ${eur(82.32, 2)} (Q3 2026, published). Later years assume the same price.`,
       compH: (y) => `Total landed cost vs. alternatives (${y})`, thOrigin: "Origin", thPrice: "Unit price", thDuty: "Duty", thTotal: "Total € / t",
       korea: "Korea (us)", fta: "0% (EU–Korea FTA)", name: (c) => c.nameEn,
-      compSrc: (m) => `${m ? "Unit prices: " + S.MARKET_PRICES.source + ". " : ""}CBAM at official default values for every origin. Quality and lead time not included.`,
+      compSrc: (m, code) => `${m ? "Unit prices: " + S.MARKET_PRICES.source + ", CN " + fmtCode(code) + ". " : ""}CBAM at official default values for every origin. Quality and lead time not included.`,
       clauseH: "Proposed CBAM price clause",
       clause: (sh, cap) => `Prices exclude CBAM. CBAM per tonne = certificates × certificate price. The supplier bears ${sh}% of it${cap != null ? `, capped at ${eur(cap)} per tonne` : ""}. If verified actual emissions are provided, the certificate count is recalculated.`,
       thSupplier: "Supplier", thBuyer: "Buyer", capped: " (cap)",
@@ -209,7 +211,7 @@
       costSrc: (dv, route, bm) => `한국 기본값 ${dv} tCO2e/톤${route ? ", 생산경로 " + route : ""}, CBAM 벤치마크 ${bm}, 인증서 가격 ${eur(82.32, 2)}(2026년 3분기 공표). 2027년 이후는 같은 가격을 가정했습니다.`,
       compH: (y) => `경쟁 원산지와 바이어 총비용 비교 (${y}년)`, thOrigin: "원산지", thPrice: "단가", thDuty: "관세", thTotal: "합계 € / 톤",
       korea: "한국 (당사)", fta: "0% (한-EU FTA)", name: (c) => c.nameKo,
-      compSrc: (m) => `${m ? "단가: 2025년 독일 통관 평균(Eurostat Comext, CN 7318 15 88). " : ""}모든 원산지의 CBAM은 공식 기본값으로 계산했습니다. 품질과 납기는 반영하지 않았습니다.`,
+      compSrc: (m, code) => `${m ? "단가: 2025년 독일 수입 평균(Eurostat Comext, CN " + fmtCode(code) + "). " : ""}모든 원산지의 CBAM은 공식 기본값으로 계산했습니다. 품질과 납기는 반영하지 않았습니다.`,
       clauseH: "CBAM 가격 조항 제안",
       clause: (sh, cap) => `가격에는 CBAM이 포함되지 않습니다. 톤당 CBAM 비용은 인증서 수 × 인증서 가격으로 계산하며, 공급사는 그중 ${sh}%를 부담합니다${cap != null ? `(톤당 ${eur(cap)} 상한)` : ""}. 검증된 실제 배출값을 제공하면 인증서 수를 다시 계산합니다.`,
       thSupplier: "공급사", thBuyer: "바이어", capped: " (상한)",
@@ -248,7 +250,7 @@
         <tr class="ours"><td>${L.korea}</td><td>${eur(state.ourPrice)}</td><td>${L.fta}</td><td>${eur(cur.cost)}</td><td>${eur(s.buyerComparisons[0].ourTotal)}</td></tr>
         ${s.buyerComparisons.map((c) => `<tr><td>${esc(L.name(c))}</td><td>${eur(c.price)}</td><td>${c.duty}%</td><td>${eur(c.cbam)}</td><td>${eur(c.rivalTotal)}</td></tr>`).join("")}
         </tbody></table>
-        <div class="src">${L.compSrc(s.marketPricesApply)}</div>` : "",
+        <div class="src">${L.compSrc(s.marketPricesApply, s.code)}</div>` : "",
       clause: s.clause ? `<h3>${L.clauseH}</h3>
         <div class="clause">${L.clause(Math.round(state.clause.share * 100), state.clause.cap)}</div>
         <table><thead><tr><th>${L.thYear}</th><th>${L.thCost}</th><th>${L.thSupplier}</th><th>${L.thBuyer}</th></tr></thead><tbody>
@@ -291,9 +293,7 @@
     renderMail(s);
     $("shareOut").textContent = Math.round(state.clause.share * 100) + "%";
     $("clauseInputs").hidden = !state.clause.on;
-    $("priceHint").textContent = state.code === S.MARKET_PRICES.code
-      ? "단가는 2025년 독일 통관 평균(Comext)으로 채웠어요. 실제 견적가로 바꾸면 판정이 바뀌어요."
-      : "경쟁국 CBAM은 공식 기본값으로 자동 계산돼요. 단가와 관세율은 직접 넣어 주세요.";
+    $("priceHint").textContent = "단가는 2025년 독일 수입 평균(Eurostat Comext)으로 채웠어요. 물량이 10톤 미만이라 평균이 없는 칸은 비어 있어요. 실제 견적가로 바꾸면 판정이 바뀌어요.";
     if (rebuildCompare) renderCompare(s);
     else updateVerdicts(s);
     document.querySelectorAll("#lang button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.l === state.lang)));
