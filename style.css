@@ -127,8 +127,11 @@ input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--primary); 
 .method p { margin: 0 0 6px; }
 
 /* 제안서 미리보기: A4 종이 */
-.preview { position: sticky; top: 88px; }
-.preview-label { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+/* 제안서는 화면 높이 안에서 따로 스크롤된다 */
+.preview { position: sticky; top: 88px; max-height: calc(100vh - 112px); overflow-y: auto; overscroll-behavior: contain; padding: 0 8px 8px 0; scrollbar-gutter: stable; }
+.preview::-webkit-scrollbar { width: 8px; }
+.preview::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 4px; }
+.preview-label { position: sticky; top: 0; z-index: 1; background: var(--body-bg); font-size: 14px; font-weight: 600; padding-bottom: 12px; }
 .paper {
   background: #fff; color: #1f1f1f; border: 1px solid var(--split); border-radius: var(--radius-lg); box-shadow: var(--shadow);
   width: 100%; max-width: 794px; min-height: 1000px; padding: 48px 56px; font-size: 13px; line-height: 1.55; scroll-margin-top: 80px;
@@ -162,7 +165,7 @@ input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--primary); 
 }
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; padding: 16px; }
-  .preview { position: static; }
+  .preview { position: static; max-height: none; overflow: visible; padding: 0; }
   .paper { padding: 28px 22px; min-height: 0; }
   .paper .kpis { grid-template-columns: 1fr; }
   .topbar { padding: 0 16px; }
@@ -174,7 +177,7 @@ input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--primary); 
   body { background: #fff; }
   .topbar, .sider, .panel, .preview-label { display: none !important; }
   .shell, .layout { display: block; padding: 0; }
-  .preview { position: static; }
+  .preview { position: static; max-height: none; overflow: visible; padding: 0; }
   .paper { border: 0; box-shadow: none; padding: 0; max-width: none; min-height: 0; border-radius: 0; }
   .paper tr, .paper .kpi { break-inside: avoid; }
 }
