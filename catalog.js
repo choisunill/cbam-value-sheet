@@ -4,7 +4,7 @@
   else root.CBAM_CATALOG = factory(root.CBAM_CATALOG_DATA, root.CBAM_ENGINE);
 })(typeof globalThis !== "undefined" ? globalThis : this, function (C, E) {
   const KOREA = "Korea, Republic of (South Korea)";
-  const NOT_ORIGINS = ["Mean of 10 highest", "Other Countries and Territories"];
+  const NOT_ORIGINS = ["Other Countries and Territories"];
   const KO = {
     China: "중국", Taiwan: "대만", India: "인도", "Türkiye": "튀르키예", "Viet Nam": "베트남", Japan: "일본",
     Indonesia: "인도네시아", Malaysia: "말레이시아", Thailand: "태국", "United States": "미국", "United Kingdom": "영국",
@@ -55,9 +55,16 @@
     if (!C.bm[cn]) return { ok: false, reason: "CBAM 철강·알루미늄 코드가 아닙니다." };
     const d = dvFor(origin, cn);
     if (!d) return { ok: false, reason: "이 원산지의 공식 기본값이 없습니다." };
-    if (d.route && d.route.includes("/")) return { ok: false, reason: "생산경로가 둘(" + d.route + ")로 표시돼 벤치마크를 하나로 정할 수 없습니다." };
-    const benchmark = benchmarkFor(cn, d.route, year);
+    // 원본의 "(C)/(F)"는 한 호 안에 탄소강 코드와 합금강 코드가 섞여 있다는 뜻이다.
+    // 이 CN 코드의 벤치마크 표에 실제로 있는 경로가 하나뿐일 때만 그 경로를 쓴다.
+    let route = d.route, benchmark;
+    if (route && route.includes("/")) {
+      const hits = route.split("/").map((r) => [r, benchmarkFor(cn, r, year)]).filter(([, b]) => b != null);
+      if (hits.length !== 1) return { ok: false, reason: "생산경로가 둘(" + d.route + ")로 표시돼 벤치마크를 하나로 정할 수 없습니다." };
+      [route, benchmark] = hits[0];
+    } else benchmark = benchmarkFor(cn, route, year);
     if (benchmark == null) return { ok: false, reason: "이 코드의 벤치마크를 하나로 정할 수 없습니다." };
+    d.route = route;
     const see = d.total * (1 + (year >= 2028 ? MARKUP[2028] : MARKUP[year]));
     const { n } = E.certificates({ see, benchmark, year });
     const price = E.resolvePrice({ year, quarter, scenarioPrice });

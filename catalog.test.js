@@ -57,3 +57,13 @@ test("한국은 철강·알루미늄 대부분 코드를 계산할 수 있다", 
   const ok = all.filter(({ cn }) => K.cost({ cn, year: 2026, quarter: 3 }).ok).length;
   assert.ok(ok / all.length > 0.9, `${ok}/${all.length}`);
 });
+
+test("집행위 원본 값: 바레인 알루미늄 판재 기본값 2.66 (아일랜드 EPA 표는 1.98로 달랐음)", () => {
+  assert.strictEqual(K.dvFor("Bahrain", "76061191").total, 2.66);
+});
+
+test("경로가 (C)/(F)로 표시된 호는 벤치마크 표에 있는 경로로 정한다 (7205 → C)", () => {
+  const r = K.cost({ cn: "72051000", year: 2026, quarter: 3 });
+  assert.ok(r.ok, r.reason);
+  assert.strictEqual(r.route, "(C)");
+});
