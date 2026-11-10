@@ -77,6 +77,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .tag.hold { background: #ecfdf5; color: var(--good); }
 .tag.match { background: #fff7ed; color: var(--warn); }
 .tag.nonprice { background: #fef2f2; color: var(--bad); }
+.add-rival select { font-size: 13px; color: var(--accent); }
+.crow .cbam { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.crow .remove { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0 2px; }
 .check { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px; cursor: pointer; }
 .clause-inputs[hidden] { display: none; }
 
