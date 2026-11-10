@@ -106,6 +106,10 @@
   </form>
 
   <div class="preview">
+    <section class="chartpane" aria-label="가격 비교 그래프">
+      <h2>원산지별 바이어 총비용 <small>단가 + 관세 + CBAM</small></h2>
+      <div id="chart"></div>
+    </section>
     <div class="preview-label"><span>바이어에게 보낼 제안서 미리보기</span>
       <div class="seg" id="lang" role="radiogroup" aria-label="제안서 언어">
         <button type="button" role="radio" data-l="ko">한국어</button><button type="button" role="radio" data-l="en">English</button>
@@ -122,6 +126,7 @@
 <script src="catalog.js"></script>
 <script src="prices-data.js"></script>
 <script src="duty-data.js"></script>
+<script src="ko-names.js"></script>
 <script src="sheet.js"></script>
 <script src="messages.js"></script>
 <script src="app.js"></script>

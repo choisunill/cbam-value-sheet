@@ -146,9 +146,9 @@
     const rows = s.ok ? s.rivals : [];
     $("compare").innerHTML = rows.map((r, i) => {
       let verdict = r.cbam == null ? `<span class="hint">${esc(r.cbamReason)}</span>` : `<span class="hint">단가와 관세율을 넣으면 판정이 나와요</span>`;
-      if (r.verdict === "hold") verdict = `<span class="tag hold">가격 유지</span> 바이어 총비용이 우리가 ${eur(r.room)} 낮아요. 분담을 거절할 근거가 있어요.`;
-      if (r.verdict === "match") verdict = `<span class="tag match">분담 검토</span> 단가를 ${eur(r.needed)} 낮추면 같아져요 (CBAM의 ${Math.round(r.share * 100)}%).`;
-      if (r.verdict === "nonprice") verdict = `<span class="tag nonprice">가격 외 경쟁</span> CBAM을 다 양보해도 ${eur(-r.room)} 비싸요. 품질·납기로 설득해야 해요.`;
+      if (r.verdict === "hold") verdict = `<span class="tag hold">가격 유지</span> 우리가 ${eur(r.room)} 낮음`;
+      if (r.verdict === "match") verdict = `<span class="tag match">분담 검토</span> 단가 ${eur(r.needed)} 인하 시 동일 (CBAM의 ${Math.round(r.share * 100)}%)`;
+      if (r.verdict === "nonprice") verdict = `<span class="tag nonprice">가격 외 경쟁</span> CBAM을 다 양보해도 ${eur(-r.room)} 높음`;
       return `<div class="crow">
         <div class="top"><strong>${esc(r.nameKo)}산과 비교</strong>
           <span><label class="check" style="margin:0;display:inline-flex"><input type="checkbox" data-i="${i}" data-k="include" ${r.include ? "checked" : ""} ${r.verdict ? "" : "disabled"}> 제안서에 넣기</label>
@@ -160,6 +160,40 @@
         </div>
         <div class="verdict">${verdict}</div></div>`;
     }).join("");
+  }
+
+  // 가격 비교 그래프: 바이어 총비용(단가 + 관세 + CBAM)을 원산지별 가로 막대로. 점선이 우리 총비용.
+  function renderChart(s) {
+    const el = $("chart");
+    if (!s.ok || !(state.ourPrice > 0)) { el.innerHTML = `<p class="hint">우리 단가를 넣으면 그래프가 나와요.</p>`; return; }
+    const rows = [{ name: "한국 (우리)", price: state.ourPrice, duty: 0, cbam: s.current.cost, ours: true },
+      ...s.comparisons.map((c) => ({ name: c.nameKo, price: c.price, duty: c.price * c.duty / 100, cbam: c.cbam, c }))];
+    rows.forEach((r) => (r.total = r.price + r.duty + r.cbam));
+    rows.sort((a, b) => a.total - b.total);
+    const ourTotal = rows.find((r) => r.ours).total;
+    const cap = ourTotal * 2; // 이보다 큰 막대는 잘라서 그린다(값은 숫자로 표시)
+    const scale = Math.min(Math.max(...rows.map((r) => r.total)), cap) * 1.04;
+    const lower = s.comparisons.filter((c) => c.verdict === "hold").length;
+    const note = (r) => {
+      if (r.ours) return "기준";
+      const c = r.c;
+      if (c.verdict === "hold") return `<span class="tag hold">가격 유지</span>우리가 ${eur(c.room)} 낮음`;
+      if (c.verdict === "match") return `<span class="tag match">분담 검토</span>${eur(c.needed)} 인하 시 동일`;
+      return `<span class="tag nonprice">가격 외 경쟁</span>${eur(-c.room)} 높음`;
+    };
+    const bar = (r) => {
+      const k = r.total > cap ? cap / r.total : 1, w = (v) => (v * k / scale * 100).toFixed(2) + "%";
+      return `<div class="bar${r.total > cap ? " clipped" : ""}" role="img" aria-label="${esc(r.name)} 단가 ${eur(r.price)}, 관세 ${eur(r.duty)}, CBAM ${eur(r.cbam)}, 합계 ${eur(r.total)}">
+        <i class="p" style="width:${w(r.price)}"></i><i class="d" style="width:${w(r.duty)}"></i><i class="c" style="width:${w(r.cbam)}"></i><b>${eur(r.total)}</b></div>`;
+    };
+    const missing = s.rivals.filter((r) => !r.verdict).map((r) => r.nameKo);
+    el.innerHTML = `
+      <p class="chart-lead">바이어가 내는 톤당 총비용은 한국산 <strong>${eur(ourTotal)}</strong>. 비교한 ${s.comparisons.length}개국 중 <strong>${lower}개국</strong>보다 낮아요.</p>
+      <div class="legend"><span><i class="p"></i>단가</span><span><i class="d"></i>관세</span><span><i class="c"></i>CBAM</span><span><i class="ref"></i>우리 총비용</span></div>
+      <div class="bars" style="--ref:${(ourTotal / scale * 100).toFixed(2)}%">
+        ${rows.map((r) => `<div class="brow${r.ours ? " ours" : ""}"><div class="bname">${esc(r.name)}</div><div class="btrack">${bar(r)}</div><div class="bnote">${note(r)}</div></div>`).join("")}
+      </div>
+      <p class="hint">${s.year}년 수입분, €/톤. CBAM은 모든 원산지에 공식 기본값을 적용했어요.${rows.some((r) => r.total > cap) ? " 우리 총비용의 2배를 넘는 막대는 잘라서 그렸어요." : ""}${missing.length ? ` 단가나 관세율이 없어 빠진 나라: ${esc(missing.join(", "))}.` : ""}</p>`;
   }
 
   let lastSheet = null;
@@ -285,12 +319,16 @@
     cov.className = "coverage " + (s.ok ? "ok" : "no");
     cov.textContent = s.ok ? "CBAM 대상이고 한국산 기본값으로 계산할 수 있어요." : s.reason;
     const info = BY_CODE[state.code];
-    $("codeDesc").textContent = info ? `${sectorKo[info.sector]} · ${info.desc}` : "";
+    // 한글 품명은 관세청 HS 4·6단위, 8자리 세부 설명은 EU 품목분류표 원문(영어)
+    const KN = window.CBAM_KO_NAMES || { h4: {}, h6: {} };
+    const k4 = KN.h4[state.code.slice(0, 4)], k6 = KN.h6[state.code.slice(0, 6)];
+    $("codeDesc").innerHTML = info ? `${k4 ? `<span class="ko-name">${esc(k4)}${k6 ? `<br>└ ${esc(k6)}` : ""}</span>` : ""}<span class="en-name">${esc(info.desc)}</span>` : "";
     document.querySelectorAll("#year button").forEach((b) => b.setAttribute("aria-checked", String(Number(b.dataset.y) === state.year)));
     if (s.ok) $("segment").innerHTML = `<strong>${esc(s.type.label)}</strong>${esc(s.type.why)}`;
     $("regCheck").innerHTML = S.regCheck(s, state).map((i) => `<li class="${i.level}">${esc(i.text)}</li>`).join("");
     lastSheet = s;
     renderMail(s);
+    renderChart(s);
     $("shareOut").textContent = Math.round(state.clause.share * 100) + "%";
     $("clauseInputs").hidden = !state.clause.on;
     $("priceHint").textContent = "단가는 2025년 독일 수입 평균(Eurostat Comext)으로 채웠어요. 물량이 10톤 미만이라 평균이 없는 칸은 비어 있어요. 실제 견적가로 바꾸면 판정이 바뀌어요.";
@@ -332,6 +370,7 @@
     links.forEach((a, k) => { a.classList.toggle("active", k === cur); a.setAttribute("aria-current", k === cur ? "step" : "false"); });
     document.getElementById("prevStep").disabled = cur === 0;
     document.getElementById("nextStep").hidden = cur === ids.length - 1;
+    document.body.dataset.tab = ids[cur]; // 가격 비교 단계에서는 오른쪽에 제안서 대신 그래프를 보여 준다
     try { sessionStorage.setItem("cbam-tab", ids[cur]); } catch { /* 무시 */ }
   }
   links.forEach((a, k) => a.addEventListener("click", (e) => { e.preventDefault(); show(k); }));

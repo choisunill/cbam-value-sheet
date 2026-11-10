@@ -112,6 +112,37 @@ input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--ink); marg
 .mail input[readonly] { margin-bottom: 8px; background: var(--bg); font-weight: 600; }
 .mail textarea { height: auto; padding: 10px 12px; font-size: 13px; line-height: 1.65; resize: vertical; background: var(--bg); margin-bottom: 8px; }
 
+/* 품명 */
+#codeDesc .ko-name { display: block; color: var(--ink); font-size: 12.5px; margin-bottom: 4px; }
+#codeDesc .en-name { display: block; }
+
+/* 가격 비교 그래프: 3단계에서만 제안서 자리에 보인다 */
+.chartpane { display: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 28px; max-width: 900px; }
+body[data-tab="s3"] .chartpane { display: block; }
+body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; }
+.chartpane h2 { margin: 0 0 4px; font-size: 15px; }
+.chartpane h2 small { font-weight: 400; font-size: 12px; color: var(--ink-3); margin-left: 6px; }
+.chart-lead { font-size: 18px; line-height: 1.45; margin: 10px 0 18px; letter-spacing: -0.01em; }
+.legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-2); margin-bottom: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; display: inline-block; }
+.legend i.ref { width: 0; height: 14px; border-left: 2px dashed var(--ink); }
+.bars i.p, .legend i.p { background: #cfd2d7; }
+.bars i.d, .legend i.d { background: #8a8f98; }
+.bars i.c, .legend i.c { background: var(--ink); }
+.bars { position: relative; border-top: 1px solid var(--line); }
+.brow { display: grid; grid-template-columns: 96px minmax(0, 1fr) 190px; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+.brow.ours { font-weight: 700; }
+.btrack { position: relative; height: 26px; }
+/* 우리 총비용 기준선 */
+.btrack::after { content: ""; position: absolute; top: -11px; bottom: -11px; left: var(--ref); border-left: 2px dashed var(--ink); opacity: .55; pointer-events: none; }
+.bar { display: flex; align-items: center; height: 100%; }
+.bar i { display: block; height: 100%; }
+.bar i + i { margin-left: 2px; }
+.bar b { margin-left: 8px; font-weight: 600; font-variant-numeric: tabular-nums; background: var(--surface); position: relative; z-index: 1; padding: 0 2px; }
+.bar.clipped i.c { clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 0 100%); }
+.bnote { font-size: 12.5px; color: var(--ink-2); font-weight: 400; }
+
 /* 경쟁국: 상자 대신 줄 */
 .compare { border-top: 1px solid var(--line); margin-bottom: 10px; }
 .crow { padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
@@ -203,15 +234,20 @@ input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--ink); marg
   .paper .kpi { border-left: 0; padding: 0; }
   .topbar { padding: 0 16px; }
   .brand span, .privacy { display: none; }
+  .brow { grid-template-columns: 72px minmax(0, 1fr); }
+  .bnote { grid-column: 2; }
 }
 
 @media print {
   @page { size: A4; margin: 14mm; }
   body { background: #fff; }
-  .topbar, .sider, .panel, .preview-label { display: none !important; }
+  .topbar, .sider, .panel, .preview-label, .chartpane { display: none !important; }
+  .paper { display: block !important; }
   .shell, .layout { display: block; padding: 0; }
   .preview { position: static; max-height: none; overflow: visible; padding: 0; }
   .paper { border: 0; padding: 0; max-width: none; min-height: 0; }
   .paper tr, .paper .kpis { break-inside: avoid; }
   .paper h3 { break-after: avoid; }
 }
+
+.chartpane .hint { margin: 14px 0 0; }
