@@ -146,6 +146,18 @@
     render(false);
   });
   $("print").addEventListener("click", () => window.print());
+  // 시연용 예시: 가상의 회사와 바이어로 모든 칸을 채우고 1단계로 돌아간다. 입력해 둔 값은 지워진다.
+  $("demo").addEventListener("click", () => {
+    state = {
+      ...freshState(), lang: state.lang,
+      company: "한빛볼트(주)", buyer: "Muster GmbH",
+      buyerProfile: { relation: "existing", industry: "distributor", purpose: "resale", exposure: "high", esg: false },
+      values: { relationship: true, lead: true, supply: false, quality: true, support: true },
+      verification: "self",
+    };
+    syncInputs(); render();
+    document.querySelector("#tabs a").click();
+  });
   $("lang").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { state.lang = b.dataset.l; render(false); } });
 
   // ---------- 그리기 ----------
