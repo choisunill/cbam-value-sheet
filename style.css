@@ -261,3 +261,23 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 .code-desc summary:hover { color: var(--ink); }
 .code-desc[open] summary { margin-bottom: 8px; }
 .code-desc .hint { margin: 0; }
+
+/* 점검에서 찾은 문제 수정 */
+/* 5단계 메일 본문이 한 줄 높이로 줄어들던 문제 */
+#mailBody { height: auto; min-height: 260px; padding: 10px 12px; font-size: 13px; line-height: 1.65; resize: vertical; background: var(--bg); margin-bottom: 8px; }
+#mailSubject { margin-bottom: 8px; background: var(--bg); font-weight: 600; }
+/* 좁은 화면에서 입력칸이 화면 밖으로 밀리던 문제 */
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .panel, .preview { min-width: 0; }
+}
+/* 인쇄: 핵심 숫자를 한 줄로, 표가 쪽 사이에서 잘리지 않게 */
+@media print {
+  .paper .kpis { grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .paper .kpi { padding: 2px 16px; border-left: 1px solid #c9c9c9; }
+  .paper .kpi:first-child { padding-left: 0; border-left: 0; }
+  .paper table, .paper .clause { break-inside: avoid; }
+  .paper .clause { break-after: avoid; }
+}
+/* 좁은 화면의 가격 비교 단계에서는 그래프를 입력칸 위에 둔다 */
+@media (max-width: 1000px) { body[data-tab="s3"] .preview { order: -1; } }
