@@ -265,7 +265,7 @@
         <div class="status"><strong>${L.verif}</strong> ${esc(L.verifText(s.verification))}</div>`,
     };
     return `<header>
-        <div><div class="eyebrow">Buyer Value Sheet · EU CBAM</div><h1>${esc(L.headline(t))}</h1></div>
+        <div><div class="eyebrow">Buyer Value Sheet · EU CBAM · CN ${fmtCode(s.code)}</div><h1>${esc(L.headline(t))}</h1></div>
         <div class="meta">${L.from} <strong>${esc(from)}</strong><br>${L.to} <strong>${esc(to)}</strong><br>CN ${fmtCode(s.code)}<br>${today}</div>
       </header>
       <p class="pitch">${esc(L.pitch(t))}</p>
@@ -278,7 +278,7 @@
     // 처음 판정이 나온 행은 '가격 유지'일 때만 제안서에 넣는다. 이후는 사용자가 정한다.
     let s = S.build(state);
     if (s.ok) {
-      s.rivals.forEach((c, i) => { if (c.verdict && state.rivals[i].include == null) state.rivals[i].include = c.verdict === "hold"; });
+      s.rivals.forEach((c, i) => { if (c.verdict && state.rivals[i].include == null) state.rivals[i].include = c.verdict === "hold" && c.price <= 2 * state.ourPrice; }); // 단가가 2배 넘게 차이 나면 다른 제품군일 수 있어 자동으로 넣지 않는다
       s = S.build(state);
     }
     const cov = $("coverage");
