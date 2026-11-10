@@ -251,3 +251,6 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 }
 
 .chartpane .hint { margin: 14px 0 0; }
+
+/* 버튼 바로 아래 안내글은 위로 당기지 않는다 */
+.btn + .hint { margin-top: 8px; }
