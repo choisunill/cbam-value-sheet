@@ -204,3 +204,17 @@
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; $("install").hidden = false; });
   $("install").addEventListener("click", async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; $("install").hidden = true; });
 })();
+
+// 왼쪽 메뉴: 보고 있는 단계를 표시한다.
+(function () {
+  const links = [...document.querySelectorAll(".menu a")];
+  if (!("IntersectionObserver" in window) || !links.length) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      links.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + en.target.id));
+    });
+  }, { rootMargin: "-80px 0px -60% 0px" });
+  // 제안서 미리보기는 처음부터 화면에 걸려 있어서 입력 단계만 관찰한다.
+  document.querySelectorAll(".step[id]").forEach((t) => io.observe(t));
+})();
