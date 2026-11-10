@@ -1,0 +1,16 @@
+{
+  "name": "CBAM Value Sheet",
+  "short_name": "CBAM Sheet",
+  "description": "EU CBAM 비용을 계산하고 바이어 제안서를 만드는 도구",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#1e3a8a",
+  "lang": "ko",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CBAM Value Sheet</title>
+<meta name="description" content="EU CBAM 비용을 계산하고 바이어에게 보낼 제안서를 만드는 도구. 입력값은 이 기기 밖으로 전송되지 않습니다.">
+<meta name="theme-color" content="#1e3a8a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <img src="icons/icon-192.png" alt="" width="28" height="28">
+    <div><strong>CBAM Value Sheet</strong><span>볼트·나사 수출기업용 바이어 제안서 도구</span></div>
+  </div>
+  <div class="top-actions">
+    <span class="privacy" title="계산은 브라우저 안에서만 합니다. 서버로 보내는 데이터가 없습니다.">🔒 입력값은 이 기기 밖으로 나가지 않아요</span>
+    <button type="button" id="install" class="btn ghost" hidden>PC에 설치</button>
+  </div>
+</header>
+
+<main class="layout">
+  <form class="panel" id="form" autocomplete="off" onsubmit="return false">
+
+    <section class="step">
+      <h2><span class="num">1</span>제품 진단</h2>
+      <label class="field"><span>CN 코드</span>
+        <select id="code"></select>
+      </label>
+      <div class="coverage" id="coverage" role="status"></div>
+      <div class="field"><span>수입 연도</span>
+        <div class="seg" id="year" role="radiogroup" aria-label="수입 연도"></div>
+      </div>
+      <label class="field"><span>연간 수출량 (톤)</span>
+        <input id="qty" type="number" min="0" step="1" inputmode="numeric">
+      </label>
+    </section>
+
+    <section class="step">
+      <h2><span class="num">2</span>바이어</h2>
+      <label class="field"><span>우리 회사명</span><input id="company" type="text" maxlength="60" placeholder="예: OO볼트(주)"></label>
+      <label class="field"><span>바이어 회사명</span><input id="buyer" type="text" maxlength="60" placeholder="예: Muster GmbH"></label>
+      <div class="field"><span>바이어 유형</span>
+        <div class="cards" id="buyerType"></div>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2><span class="num">3</span>가치 계산 <small>내부용</small></h2>
+      <label class="field"><span>우리 단가 (€/톤, 관세 0%: 한-EU FTA)</span>
+        <input id="ourPrice" type="number" min="0" step="1" inputmode="numeric">
+      </label>
+      <p class="hint" id="priceHint"></p>
+      <div class="compare" id="compare"></div>
+      <label class="check"><input type="checkbox" id="clauseOn"> 가격 조항 제안 넣기</label>
+      <div class="clause-inputs" id="clauseInputs">
+        <label class="field"><span>우리 분담률 <output id="shareOut"></output></span><input id="share" type="range" min="0" max="100" step="5"></label>
+        <label class="field"><span>톤당 상한 (€, 비우면 없음)</span><input id="cap" type="number" min="0" step="1"></label>
+      </div>
+    </section>
+
+    <section class="step">
+      <h2><span class="num">4</span>제공할 자료</h2>
+      <div class="field" id="dataItems"></div>
+      <label class="field"><span>배출 데이터 검증 상태</span><select id="verification"></select></label>
+      <button type="button" class="btn primary wide" id="print">제안서 PDF로 저장</button>
+      <p class="hint">인쇄 창에서 "PDF로 저장"을 고르세요.</p>
+    </section>
+
+    <footer class="method">
+      <p>기본값 경로: 인증서 수 = 기본값 × (1 + 할증) − 벤치마크 × CBAM 계수. 근거 IR 2026/1740, IR 2025/2620, Directive 2003/87, 인증서 가격은 집행위 공표값(2026년 3분기 €82.32).</p>
+      <p>2027년 이후는 같은 인증서 가격을 가정한 값이며 전망이 아닙니다. 실제 배출값, 한국 탄소가격 공제는 반영하지 않습니다.</p>
+    </footer>
+  </form>
+
+  <div class="preview">
+    <div class="preview-label">바이어에게 보낼 제안서 미리보기</div>
+    <article class="paper" id="sheet" aria-live="polite"></article>
+  </div>
+</main>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="negotiation.js"></script>
+<script src="sheet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
