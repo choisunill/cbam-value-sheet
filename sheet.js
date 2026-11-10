@@ -13,6 +13,30 @@
 
   // 바이어 진단(STP). 세 질문의 답으로 세그먼트를 정하고, 세그먼트가 제안서의 강조점과 순서를 정한다.
   // shortcut: 분류 규칙은 예시다. 세분화 담당 결과가 나오면 QUESTIONS와 segmentFor만 바꾼다.
+  // 수정 재구매: 바이어가 공급 조건과 공급사를 다시 따져 보는 상황. 기존 거래처는 지키고, 신규 제안은 그 틈에 들어간다.
+  const RELATION = {
+    existing: {
+      label: "기존 거래처 (지키기)",
+      en: "You already buy from us. CBAM is a reason to review terms, not to change supplier: below is what it costs and how we propose to handle it together.",
+      ko: "귀사는 이미 당사와 거래하고 있습니다. CBAM은 공급사를 바꿀 이유가 아니라 조건을 함께 점검할 계기입니다. 비용이 얼마이고 어떻게 함께 다룰지 아래에 정리했습니다.",
+    },
+    new: {
+      label: "신규 제안 (들어가기)",
+      en: "CBAM changes the cost of every supplier you use today. If you are reviewing your sources, this sheet lets you compare us on total landed cost and on the data we provide.",
+      ko: "CBAM은 귀사가 지금 쓰는 모든 공급사의 비용을 바꿉니다. 공급처를 다시 검토하신다면, 이 자료로 당사를 총조달비용과 제공 자료 기준에서 비교해 보실 수 있습니다.",
+    },
+  };
+  const relationOf = (state) => (state.buyerProfile && RELATION[state.buyerProfile.relation] ? state.buyerProfile.relation : "existing");
+
+  // 차별화: 가격·탄소 말고 드리는 가치. 사실인 것만 사용자가 고른다.
+  const VALUE_ITEMS = {
+    relationship: { ko: "지속적인 거래 관계와 전담 담당자", en: "An established relationship and a dedicated contact" },
+    lead: { ko: "안정적인 납기", en: "Reliable lead times" },
+    supply: { ko: "안정적인 원소재 공급망", en: "A stable raw material supply chain" },
+    quality: { ko: "품질 인증과 검사 성적서 제공", en: "Quality certificates and inspection reports" },
+    support: { ko: "CBAM 신고에 필요한 자료 지원", en: "Support with the data for your CBAM declaration" },
+  };
+
   const QUESTIONS = {
     industry: { ko: "업종", options: { distributor: "유통·수입상", manufacturer: "자동차·기계 부품 제조", construction: "건설·프로젝트" } },
     purpose: { ko: "구매 목적", options: { resale: "재판매", production: "생산에 투입", project: "프로젝트 납품" } },
@@ -27,7 +51,7 @@
       pitch: "As the EU importer you pay CBAM. We give you the cost per tonne, how it moves to 2028, and the data your declaration needs, so you can price without guessing.",
       headlineKo: "톤마다 CBAM 비용을 미리 알고 견적하세요.",
       pitchKo: "CBAM은 EU 수입자인 귀사가 냅니다. 톤당 비용, 2028년까지의 변화, 신고에 필요한 자료를 드려 추측 없이 가격을 정할 수 있게 합니다.",
-      order: ["cost", "compare", "clause", "roles", "data"],
+      order: ["cost", "compare", "clause", "values", "roles", "data"],
     },
     risk: {
       label: "위험·신뢰 중심",
@@ -36,7 +60,7 @@
       pitch: "Purchased steel and aluminium parts are part of your Scope 3 and CBAM exposure. We document the emissions basis, state its verification status, and fix how CBAM cost is shared.",
       headlineKo: "배출 근거 자료로 CBAM 비용과 공급 위험을 줄이세요.",
       pitchKo: "구매하는 철강·알루미늄 부품은 귀사의 Scope 3 배출과 CBAM 부담에 들어갑니다. 배출 산정 근거와 검증 상태를 문서로 드리고, CBAM 비용 분담 방식을 정해 둡니다.",
-      order: ["data", "cost", "clause", "roles", "compare"],
+      order: ["data", "values", "cost", "clause", "roles", "compare"],
     },
     certainty: {
       label: "비용 확정 중심",
@@ -45,7 +69,7 @@
       pitch: "CBAM rises every year to 2028. We quote it separately with a fixed share and a cap per tonne, so your project budget does not move with the default mark-up.",
       headlineKo: "프로젝트 기간의 CBAM 비용을 미리 고정하세요.",
       pitchKo: "CBAM은 2028년까지 해마다 오릅니다. CBAM을 단가와 따로 견적하고 분담률과 톤당 상한을 정해, 할증이 올라도 프로젝트 예산이 흔들리지 않게 합니다.",
-      order: ["clause", "cost", "compare", "roles", "data"],
+      order: ["clause", "cost", "compare", "values", "roles", "data"],
     },
   };
 
@@ -131,6 +155,9 @@
       type: SEGMENTS[segmentFor(state.buyerProfile)],
       lowExposure: !!(state.buyerProfile && state.buyerProfile.exposure === "low"),
       roles: state.roles !== false,
+      relation: relationOf(state),
+      relationText: RELATION[relationOf(state)],
+      values: Object.keys(VALUE_ITEMS).filter((k) => state.values && state.values[k]).map((k) => VALUE_ITEMS[k]),
       verification: VERIFICATION[state.verification] || VERIFICATION.none,
       dataProvided: Object.keys(DATA_ITEMS).filter((k) => state.dataItems && state.dataItems[k]).map((k) => DATA_ITEMS[k]),
       // 제안서에 넣은 단가가 모두 시장 평균 그대로일 때만 출처를 적는다
@@ -160,5 +187,5 @@
     return items;
   }
 
-  return { YEARS, MARKET_PRICES, DEFAULT_RIVALS, QUESTIONS, SEGMENTS, segmentFor, VERIFICATION, DATA_ITEMS, defaultDuty, dutyFlag, marketPrice, build, regCheck };
+  return { YEARS, MARKET_PRICES, DEFAULT_RIVALS, QUESTIONS, SEGMENTS, segmentFor, RELATION, VALUE_ITEMS, VERIFICATION, DATA_ITEMS, defaultDuty, dutyFlag, marketPrice, build, regCheck };
 });

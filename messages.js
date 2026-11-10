@@ -20,7 +20,9 @@
 
     if (ko) {
       lines.push(`${buyer}님께,`, "");
-      lines.push(`CBAM 비용 문의 감사합니다. EU 공식 기본값으로 계산하면 당사 제품(CN ${code})의 ${year}년 수입분 CBAM 비용은 톤당 ${cost}입니다.`);
+      if (opt.relation === "new") lines.push("CBAM으로 공급처를 다시 검토하고 계신다면, 당사를 비교 대상에 넣어 주시기를 제안드립니다.");
+      else lines.push("그동안의 거래에 감사드립니다. CBAM 비용을 어떻게 다룰지 당사의 생각을 말씀드립니다.");
+      lines.push(`EU 공식 기본값으로 계산하면 당사 제품(CN ${code})의 ${year}년 수입분 CBAM 비용은 톤당 ${cost}입니다.`);
       if (rival && rival.verdict === "hold") {
         lines.push(`CBAM을 포함해도 당사 제품의 바이어 총비용은 톤당 ${eur(rival.ourTotal)}로, ${rival.nameKo}산 대체 공급(톤당 ${eur(rival.rivalTotal)})보다 ${eur(rival.room)} 낮습니다.`);
         lines.push("그래서 현재 단가를 유지하는 것을 제안드립니다.");
@@ -39,7 +41,9 @@
     }
 
     lines.push(`Dear ${buyer},`, "");
-    lines.push(`Thank you for raising the CBAM cost. Using official EU default values, CBAM on our product (CN ${code}) is ${cost} per tonne for ${year} imports.`);
+    if (opt.relation === "new") lines.push("If CBAM has led you to review your sources, we would like to be considered.");
+    else lines.push("Thank you for our business together. Here is how we propose to handle the CBAM cost.");
+    lines.push(`Using official EU default values, CBAM on our product (CN ${code}) is ${cost} per tonne for ${year} imports.`);
     if (rival && rival.verdict === "hold") {
       lines.push(`Even with CBAM included, your total landed cost from us is ${eur(rival.ourTotal)} per tonne, ${eur(rival.room)} lower than comparable supply from ${rival.nameEn} (${eur(rival.rivalTotal)} per tonne).`);
       lines.push("We therefore propose to keep our current price.");

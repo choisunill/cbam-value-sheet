@@ -99,3 +99,20 @@ test("관세율: 조사로 확인한 값과 같다 (7318 15 88)", () => {
   assert.ok(S.dutyFlag("73181588", "China"));
   assert.strictEqual(S.defaultDuty("72082500", "India"), 0); // 열연, 기본세율 0%
 });
+
+test("수정 재구매: 관계에 따라 제안서 머리말과 메일 첫 문장이 바뀐다", () => {
+  const M = require("./messages.js");
+  const ex = S.build(base), nw = S.build({ ...base, buyerProfile: { ...base.buyerProfile, relation: "new" } });
+  assert.strictEqual(ex.relation, "existing"); // 값이 없으면 기존 거래처
+  assert.strictEqual(nw.relation, "new");
+  assert.notStrictEqual(ex.relationText.ko, nw.relationText.ko);
+  assert.match(M.email(nw, null, { lang: "ko", relation: nw.relation, clause: base.clause }).body, /비교 대상/);
+  assert.match(M.email(ex, null, { lang: "en", relation: ex.relation, clause: base.clause }).body, /our business together/);
+});
+
+test("가격 외 가치: 고른 항목만 제안서에 들어간다", () => {
+  assert.strictEqual(S.build(base).values.length, 0);
+  const s = S.build({ ...base, values: { lead: true, quality: true, supply: false } });
+  assert.deepStrictEqual(s.values.map((v) => v.ko), ["안정적인 납기", "품질 인증과 검사 성적서 제공"]);
+  assert.ok(s.type.order.includes("values"));
+});

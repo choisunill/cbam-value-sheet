@@ -19,7 +19,8 @@
     return {
       code, year: 2026, qty: 100, ourPrice: S.marketPrice(code, K.KOREA) ?? NaN,
       rivals: S.DEFAULT_RIVALS.map((o) => rivalFor(code, o)),
-      company: "", buyer: "", buyerProfile: { industry: "distributor", purpose: "resale", exposure: "unknown", esg: false }, roles: true,
+      company: "", buyer: "", buyerProfile: { relation: "existing", industry: "distributor", purpose: "resale", exposure: "unknown", esg: false }, roles: true,
+      values: { relationship: false, lead: false, supply: false, quality: false, support: true },
       dataItems: { cn: true, mill: true, volume: true, installation: false },
       verification: "none", clause: { on: true, share: 0.5, cap: 120 }, lang: "ko",
     };
@@ -53,9 +54,11 @@
   fillH4();
   $("year").innerHTML = S.YEARS.map((y) => `<button type="button" role="radio" data-y="${y}">${y}</button>`).join("");
   // 바이어 진단(STP) 질문
-  $("buyerProfile").innerHTML = `<div class="qgrid">${Object.entries(S.QUESTIONS).map(([k, q]) =>
+  $("buyerProfile").innerHTML = `<div class="qgrid"><label class="field" style="margin:0"><span>이 바이어와의 관계 (수정 재구매 상황)</span><select data-q="relation">${Object.entries(S.RELATION).map(([v, t]) => `<option value="${v}">${esc(t.label)}</option>`).join("")}</select></label>${Object.entries(S.QUESTIONS).map(([k, q]) =>
     `<label class="field" style="margin:0"><span>${esc(q.ko)}</span><select data-q="${k}">${Object.entries(q.options).map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join("")}</select></label>`).join("")}
     <label class="check" style="margin:0"><input type="checkbox" data-q="esg"> 공급망 탄소(Scope 3)를 공시하거나 관리함</label></div>`;
+  $("valueItems").innerHTML = "<span>가격 외에 드리는 가치 (사실인 것만 고르세요)</span>" + Object.entries(S.VALUE_ITEMS).map(([k, v]) =>
+    `<label class="check"><input type="checkbox" data-k="${k}"> ${esc(v.ko)}</label>`).join("");
   $("dataItems").innerHTML = "<span>제안서에 적을 제공 자료</span>" + Object.entries(S.DATA_ITEMS).map(([k, v]) =>
     `<label class="check"><input type="checkbox" data-k="${k}"> ${esc(v.ko)}</label>`).join("");
   $("verification").innerHTML = Object.entries(S.VERIFICATION).map(([k, v]) => `<option value="${k}">${esc(v.ko)}</option>`).join("");
@@ -78,6 +81,9 @@
     $("cap").value = state.clause.cap == null ? "" : state.clause.cap;
     $("verification").value = state.verification;
     document.querySelectorAll("#dataItems input").forEach((el) => (el.checked = !!state.dataItems[el.dataset.k]));
+    if (!state.values) state.values = {};
+    if (!state.buyerProfile.relation) state.buyerProfile.relation = "existing";
+    document.querySelectorAll("#valueItems input").forEach((el) => (el.checked = !!state.values[el.dataset.k]));
     document.querySelectorAll("#buyerProfile [data-q]").forEach((el) => {
       if (el.type === "checkbox") el.checked = !!state.buyerProfile[el.dataset.q]; else el.value = state.buyerProfile[el.dataset.q];
     });
@@ -107,6 +113,7 @@
     render();
   });
   $("rolesOn").addEventListener("change", (e) => { state.roles = e.target.checked; render(false); });
+  $("valueItems").addEventListener("change", (e) => { if (e.target.dataset.k) { state.values[e.target.dataset.k] = e.target.checked; render(false); } });
   $("mailRival").addEventListener("change", (e) => { state.mailRival = e.target.value; renderMail(lastSheet); });
   $("mailCopy").addEventListener("click", async () => {
     const text = $("mailSubject").value + "\n\n" + $("mailBody").value;
@@ -206,7 +213,7 @@
       + `<option value="">비교 없이 (가격 조항만)</option>`;
     $("mailRival").value = state.mailRival;
     const rival = opts.find((c) => c.origin === state.mailRival) || null;
-    const m = window.CBAM_MESSAGES.email(s, rival, { lang: state.lang, company: state.company, buyer: state.buyer, clause: state.clause });
+    const m = window.CBAM_MESSAGES.email(s, rival, { lang: state.lang, company: state.company, buyer: state.buyer, clause: state.clause, relation: s.relation });
     $("mailSubject").value = m.subject;
     $("mailBody").value = m.body;
     $("mailCopied").textContent = "";
@@ -226,6 +233,7 @@
       clauseH: "Proposed CBAM price clause",
       clause: (sh, cap) => `Prices exclude CBAM. CBAM per tonne = certificates × certificate price. The supplier bears ${sh}% of it${cap != null ? `, capped at ${eur(cap)} per tonne` : ""}. If verified actual emissions are provided, the certificate count is recalculated.`,
       thSupplier: "Supplier", thBuyer: "Buyer", capped: " (cap)",
+      valuesH: "Beyond price", rel: (r) => r.en,
       dataH: "Emissions data we provide", tbd: "To be agreed.", verif: "Verification status:",
       item: (d) => d.en, verifText: (v) => v.en, headline: (t) => t.headline, pitch: (t) => t.pitch,
       rolesH: "What each team in your company gets", thRole: "Team", thNeed: "What they check", thValue: "Answer",
@@ -249,6 +257,7 @@
       clauseH: "CBAM 가격 조항 제안",
       clause: (sh, cap) => `가격에는 CBAM이 포함되지 않습니다. 톤당 CBAM 비용은 인증서 수 × 인증서 가격으로 계산하며, 공급사는 그중 ${sh}%를 부담합니다${cap != null ? `(톤당 ${eur(cap)} 상한)` : ""}. 검증된 실제 배출값을 제공하면 인증서 수를 다시 계산합니다.`,
       thSupplier: "공급사", thBuyer: "바이어", capped: " (상한)",
+      valuesH: "가격 외에 드리는 가치", rel: (r) => r.ko,
       dataH: "제공하는 배출 자료", tbd: "협의해 정합니다.", verif: "검증 상태:",
       item: (d) => d.ko, verifText: (v) => v.koLong, headline: (t) => t.headlineKo, pitch: (t) => t.pitchKo,
       rolesH: "바이어 회사 안 역할별 핵심", thRole: "담당", thNeed: "확인하는 것", thValue: "답",
@@ -294,6 +303,7 @@
         <table class="roles"><thead><tr><th>${L.thRole}</th><th>${L.thNeed}</th><th>${L.thValue}</th></tr></thead><tbody>
         ${L.roles(s, s.buyerComparisons.length ? s.buyerComparisons[0].ourTotal : null, s.verification).map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join("")}
         </tbody></table>` : "",
+      values: s.values.length ? `<h3>${L.valuesH}</h3><ul>${s.values.map((v) => `<li>${esc(L.item(v))}</li>`).join("")}</ul>` : "",
       data: `<h3>${L.dataH}</h3>
         ${s.dataProvided.length ? `<ul>${s.dataProvided.map((d) => `<li>${esc(L.item(d))}</li>`).join("")}</ul>` : `<p>${L.tbd}</p>`}
         <div class="status"><strong>${L.verif}</strong> ${esc(L.verifText(s.verification))}</div>`,
@@ -302,6 +312,7 @@
         <div><div class="eyebrow">Buyer Value Sheet · EU CBAM · CN ${fmtCode(s.code)}</div><h1>${esc(L.headline(t))}</h1></div>
         <div class="meta">${L.from} <strong>${esc(from)}</strong><br>${L.to} <strong>${esc(to)}</strong><br>CN ${fmtCode(s.code)}<br>${today}</div>
       </header>
+      <p class="pitch">${esc(L.rel(s.relationText))}</p>
       <p class="pitch">${esc(L.pitch(t))}</p>
       ${s.lowExposure ? `<p class="src">${state.lang === "ko" ? "귀사의 연간 CBAM 품목 수입이 50톤 이하라면 CBAM이 면제될 수 있습니다. 아래 수치는 그 기준을 넘을 때 적용됩니다." : "If your company's total CBAM imports stay at or below 50 tonnes a year, you may be exempt. The figures below apply above that threshold."}</p>` : ""}
       ${t.order.map((k) => sections[k]).join("")}
