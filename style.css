@@ -254,3 +254,10 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 
 /* 버튼 바로 아래 안내글은 위로 당기지 않는다 */
 .btn + .hint { margin-top: 8px; }
+
+/* 품목 설명: 눌러야 펼쳐진다 */
+.code-desc { margin: -6px 0 14px; }
+.code-desc summary { font-size: 12px; color: var(--ink-2); cursor: pointer; width: fit-content; }
+.code-desc summary:hover { color: var(--ink); }
+.code-desc[open] summary { margin-bottom: 8px; }
+.code-desc .hint { margin: 0; }
