@@ -86,9 +86,13 @@ test("협상 메일: 판정별 문장과 숫자", () => {
   assert.match(en.body, /€2,269/);
   const ko = M.email(s, tw, { lang: "ko", clause: base.clause });
   assert.match(ko.body, /현재 단가를 유지/);
-  const match = M.email(s, { ...tw, verdict: "match", needed: 50, share: 0.25 }, { lang: "en", clause: base.clause });
-  assert.match(match.body, /contribute €50 per tonne/);
   const non = M.email(s, { ...tw, verdict: "nonprice" }, { lang: "en", clause: base.clause });
+  const match = M.email(s, { ...tw, verdict: "match", needed: 50, share: 0.25 }, { lang: "en", clause: base.clause });
+  assert.match(match.body, /price reduction of €50 per tonne/);
+  assert.match(match.body, /we bear 50%/); // 제안서 조항과 같은 비율을 대안으로 적는다
+  assert.doesNotMatch(non.body, /quality|lead time/); // 고르지 않은 가치는 약속하지 않는다
+  const sv = S.build({ ...base, values: { lead: true } });
+  assert.match(M.email(sv, { ...tw, verdict: "nonprice" }, { lang: "en", clause: base.clause }).body, /Beyond price, we offer: reliable lead times\./);
   assert.doesNotMatch(non.body, /€2,377/); // 가격 외 경쟁일 때 경쟁국 총비용을 바이어에게 알리지 않는다
 });
 
@@ -110,7 +114,7 @@ test("수정 재구매: 관계에 따라 제안서 머리말과 메일 첫 문�
   assert.strictEqual(nw.relation, "new");
   assert.notStrictEqual(ex.relationText.ko, nw.relationText.ko);
   assert.match(M.email(nw, null, { lang: "ko", relation: nw.relation, clause: base.clause }).body, /비교 대상/);
-  assert.match(M.email(ex, null, { lang: "en", relation: ex.relation, clause: base.clause }).body, /our business together/);
+  assert.match(M.email(ex, null, { lang: "en", relation: ex.relation, clause: base.clause }).body, /your continued business/);
 });
 
 test("가격 외 가치: 고른 항목만 제안서에 들어간다", () => {
@@ -118,4 +122,14 @@ test("가격 외 가치: 고른 항목만 제안서에 들어간다", () => {
   const s = S.build({ ...base, values: { lead: true, quality: true, supply: false } });
   assert.deepStrictEqual(s.values.map((v) => v.ko), ["안정적인 납기", "품질 인증과 검사 성적서 제공"]);
   assert.ok(s.type.order.includes("values"));
+});
+
+test("판정 제외: 단가가 2배를 넘는 원산지와 한국산 관세가 불확실한 코드", () => {
+  const s = S.build(base);
+  const jp = s.rivals.find((r) => r.origin === "Japan");
+  assert.ok(jp.outlier && !jp.verdict); // 일본 평균 단가 €18,526 대 우리 €2,064
+  assert.ok(!s.comparisons.some((c) => c.origin === "Japan"));
+  assert.ok(S.dutyFlag("72191100", "Korea, Republic of (South Korea)"));
+  const k = S.build({ ...base, code: "72191100", rivals: [{ origin: "Taiwan", price: 2000, duty: 0, include: true }] });
+  if (k.ok) { assert.ok(k.koreaDutyUnknown); assert.strictEqual(k.comparisons.length, 0); }
 });

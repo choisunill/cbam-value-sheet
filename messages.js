@@ -16,6 +16,10 @@
     const share = cl ? Math.round(cl.share * 100) : 0;
     const capEn = cl && cl.cap != null ? `, capped at ${eur(cl.cap)} per tonne` : "";
     const capKo = cl && cl.cap != null ? `(톤당 ${eur(cl.cap)} 상한)` : "";
+    // 가격 외 가치는 사용자가 4단계에서 고른 것만 쓴다.
+    const vals = s.values || [];
+    const valsKo = vals.map((v) => v.ko).join(", ");
+    const valsEn = vals.map((v) => v.en[0].toLowerCase() + v.en.slice(1)).join("; ");
     const lines = [];
 
     if (ko) {
@@ -28,10 +32,11 @@
         lines.push("그래서 현재 단가를 유지하는 것을 제안드립니다.");
         if (cl) lines.push(`비용을 더 확실히 정하고 싶으시면, 당사가 CBAM의 ${share}%를 부담하는 조항${capKo}도 함께 검토할 수 있습니다.`);
       } else if (rival && rival.verdict === "match") {
-        lines.push(`귀사의 부담을 덜기 위해 당사가 톤당 ${eur(rival.needed)}(CBAM 비용의 ${Math.round(rival.share * 100)}%)를 분담하겠습니다.`);
+        lines.push(`귀사의 부담을 덜기 위해 단가를 톤당 ${eur(rival.needed)}(CBAM 비용의 ${Math.round(rival.share * 100)}%) 낮추는 방안을 제안드립니다.`);
         lines.push(`이렇게 하면 귀사의 총비용이 ${rival.nameKo}산 대체 공급과 같은 수준이 됩니다.`);
+        if (cl) lines.push(`또는 첨부한 제안서의 조항대로 당사가 CBAM의 ${share}%를 부담하는 방식${capKo}도 가능합니다.`);
       } else if (rival && rival.verdict === "nonprice") {
-        lines.push("가격이 중요하다는 점을 잘 알고 있습니다. 당사는 품질, 납기, 그리고 CBAM 신고에 필요한 자료 지원으로 가치를 드리고자 합니다.");
+        lines.push("가격이 중요하다는 점을 잘 알고 있습니다." + (valsKo ? ` 당사는 가격 외에 다음을 드립니다: ${valsKo}.` : ""));
         if (cl) lines.push(`CBAM 비용은 당사가 ${share}%를 부담하는 조항${capKo}으로 명확히 나누는 방안을 제안드립니다.`);
       } else if (cl) {
         lines.push(`CBAM 비용은 단가와 따로 두고, 당사가 ${share}%를 부담하는 조항${capKo}으로 나누는 방안을 제안드립니다.`);
@@ -42,17 +47,18 @@
 
     lines.push(`Dear ${buyer},`, "");
     if (opt.relation === "new") lines.push("If CBAM has led you to review your sources, we would like to be considered.");
-    else lines.push("Thank you for our business together. Here is how we propose to handle the CBAM cost.");
+    else lines.push("Thank you for your continued business. Here is how we propose to handle the CBAM cost.");
     lines.push(`Using official EU default values, CBAM on our product (CN ${code}) is ${cost} per tonne for ${year} imports.`);
     if (rival && rival.verdict === "hold") {
       lines.push(`Even with CBAM included, your total landed cost from us is ${eur(rival.ourTotal)} per tonne, ${eur(rival.room)} lower than comparable supply from ${rival.nameEn} (${eur(rival.rivalTotal)} per tonne).`);
       lines.push("We therefore propose to keep our current price.");
       if (cl) lines.push(`If you would like more certainty, we can also agree a CBAM clause under which we bear ${share}% of the CBAM cost${capEn}.`);
     } else if (rival && rival.verdict === "match") {
-      lines.push(`To support you, we will contribute ${eur(rival.needed)} per tonne towards CBAM (${Math.round(rival.share * 100)}% of the CBAM cost).`);
+      lines.push(`To support you, we can offer a price reduction of ${eur(rival.needed)} per tonne (${Math.round(rival.share * 100)}% of the CBAM cost).`);
       lines.push(`This brings your total landed cost in line with comparable supply from ${rival.nameEn}.`);
+      if (cl) lines.push(`Alternatively, we can share the CBAM cost under the clause in the attached sheet: we bear ${share}%${capEn}.`);
     } else if (rival && rival.verdict === "nonprice") {
-      lines.push("We understand that price matters. We offer value through quality, lead time and the data you need for your CBAM declaration.");
+      lines.push("We understand that price matters." + (valsEn ? ` Beyond price, we offer: ${valsEn}.` : ""));
       if (cl) lines.push(`We propose to share the CBAM cost under a clear clause: we bear ${share}%${capEn}.`);
     } else if (cl) {
       lines.push(`We propose to quote CBAM separately from the unit price and share it under a clause: we bear ${share}%${capEn}.`);

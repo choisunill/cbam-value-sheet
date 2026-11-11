@@ -64,11 +64,12 @@
     },
     certainty: {
       label: "비용 확정 중심",
-      why: "프로젝트 기간에 비용이 바뀌면 안 되는 바이어예요. 가격 조항으로 CBAM 비용을 고정하는 것부터 보여 줘요.",
-      headline: "Fix the CBAM cost for the life of your project.",
-      pitch: "CBAM rises every year to 2028. We quote it separately with a fixed share and a cap per tonne, so your project budget does not move with the default mark-up.",
-      headlineKo: "프로젝트 기간의 CBAM 비용을 미리 고정하세요.",
-      pitchKo: "CBAM은 2028년까지 해마다 오릅니다. CBAM을 단가와 따로 견적하고 분담률과 톤당 상한을 정해, 할증이 올라도 프로젝트 예산이 흔들리지 않게 합니다.",
+      why: "프로젝트 기간에 비용이 바뀌면 안 되는 바이어예요. 가격 조항으로 CBAM 분담을 정해 두는 것부터 보여 줘요.",
+      // 상한은 공급사 몫에만 걸린다. 바이어 몫은 해마다 오르므로 "비용 고정"이라고 쓰지 않는다.
+      headline: "Agree how CBAM is shared for the life of your project.",
+      pitch: "CBAM rises every year to 2028. We quote it separately with a fixed share and a cap per tonne, so you know our share in advance and can budget for yours.",
+      headlineKo: "프로젝트 기간의 CBAM 분담 방식을 미리 정해 두세요.",
+      pitchKo: "CBAM은 2028년까지 해마다 오릅니다. CBAM을 단가와 따로 견적하고 분담률과 톤당 상한을 정해, 당사 분담액을 미리 알고 귀사 몫을 예산에 넣을 수 있게 합니다.",
       order: ["clause", "cost", "compare", "values", "roles", "data"],
     },
   };
@@ -121,12 +122,16 @@
     const current = years.find((y) => y.year === state.year);
     const qty = Number.isFinite(state.qty) && state.qty > 0 ? state.qty : null;
 
+    // 한국산에 무역구제 조치가 걸린 코드는 한국 관세 0%를 믿을 수 없어 판정하지 않는다.
+    const koreaDutyUnknown = dutyFlag(state.code, K.KOREA);
     // 경쟁국 CBAM은 공식 기본값으로 늘 계산한다. 단가가 있으면 바이어 총비용 판정까지 한다.
     const rivals = state.rivals.map((r) => {
       const rc = K.cost({ cn: state.code, origin: r.origin, year: state.year, quarter: q(state.year) });
       const base = { origin: r.origin, nameKo: K.nameKo(r.origin), nameEn: K.nameEn(r.origin), include: !!r.include, price: r.price, duty: r.duty, cbam: rc.ok ? rc.costPerTonne : null, cbamReason: rc.ok ? null : rc.reason, defaultValue: rc.ok ? rc.defaultValue : null };
       const priced = rc.ok && Number.isFinite(r.price) && r.price > 0 && Number.isFinite(r.duty) && Number.isFinite(state.ourPrice) && state.ourPrice > 0;
-      if (!priced) return base;
+      if (!priced || koreaDutyUnknown) return base;
+      // 단가가 우리의 2배를 넘으면 같은 코드 안의 다른 제품군일 수 있어 판정하지 않는다.
+      if (r.price > 2 * state.ourPrice) return { ...base, outlier: true };
       return { ...base, ...N.compareOne({ price: state.ourPrice, dutyRate: 0, cbam: current.cost }, { price: r.price, dutyRate: r.duty / 100, cbam: rc.costPerTonne }) };
     });
 
@@ -148,6 +153,7 @@
       total: qty ? current.cost * qty : null,
       qty,
       rivals,
+      koreaDutyUnknown,
       comparisons: rivals.filter((r) => r.verdict),
       buyerComparisons: rivals.filter((r) => r.verdict && r.include),
       clause,

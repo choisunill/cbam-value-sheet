@@ -8,11 +8,11 @@
   const fmtCode = (c) => c.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1 $2 $3");
   const ALL = K.codes();
   const BY_CODE = Object.fromEntries(ALL.map((c) => [c.cn, c]));
-  const num = (v) => (v === "" || v == null ? NaN : Number(v));
+  const num = (v) => (v === "" || v == null || Number(v) < 0 ? NaN : Number(v)); // 음수는 빈칸으로 본다
 
   // 화면 언어. 고정 문구는 EN 사전(한국어 → 영어)으로, 숫자가 끼는 문구는 T(한국어, 영어)로 바꾼다.
   const EN = {
-    "한국 철강·알루미늄 수출기업용 바이어 제안서 도구": "Buyer proposal tool for Korean steel and aluminium exporters",
+    "한국 철강·알루미늄 수출기업용 바이어 제안서 도구": "Buyer proposal tool for Korean steel and aluminium exporters (Korean-origin goods only)",
     "입력값은 이 기기 밖으로 나가지 않아요": "Your inputs never leave this device",
     "계산은 브라우저 안에서만 합니다. 서버로 보내는 데이터가 없습니다.": "All calculation happens in your browser. Nothing is sent to a server.",
     "예시 불러오기": "Load example", "가상의 회사와 바이어로 채운 시연용 예시를 불러옵니다": "Loads a demo example with a fictional company and buyer",
@@ -47,7 +47,7 @@
     "비용 중심": "Cost-focused", "위험·신뢰 중심": "Risk and trust-focused", "비용 확정 중심": "Cost certainty-focused",
     "재판매용으로 사서 단가와 총조달비용이 가장 중요한 바이어예요. 비용 → 경쟁 비교 순서로 보여 줘요.": "This buyer resells, so unit price and total landed cost matter most. The sheet shows cost first, then the comparison.",
     "생산에 투입하거나 공급망 탄소를 관리하는 바이어예요. 배출 근거와 검증 상태를 먼저 보여 줘요.": "This buyer uses the goods in production or manages supply chain carbon. The sheet leads with the emissions basis and verification status.",
-    "프로젝트 기간에 비용이 바뀌면 안 되는 바이어예요. 가격 조항으로 CBAM 비용을 고정하는 것부터 보여 줘요.": "This buyer cannot have costs change during a project. The sheet leads with a price clause that fixes the CBAM cost.",
+    "프로젝트 기간에 비용이 바뀌면 안 되는 바이어예요. 가격 조항으로 CBAM 분담을 정해 두는 것부터 보여 줘요.": "This buyer cannot have costs change during a project. The sheet leads with a price clause that sets how CBAM is shared.",
     "아직 없음": "Not yet", "자체 산정": "Self-estimated", "사전검증": "Pre-verified", "EU 인정 검증": "EU-accredited verification",
     "CBAM 철강·알루미늄 코드가 아닙니다.": "Not a CBAM steel or aluminium code.", "이 원산지의 공식 기본값이 없습니다.": "No official default value for this origin.",
     "이 코드의 벤치마크를 하나로 정할 수 없습니다.": "A single benchmark cannot be determined for this code.",
@@ -241,6 +241,8 @@
     const rows = s.ok ? s.rivals : [];
     $("compare").innerHTML = rows.map((r, i) => {
       let verdict = `<span class="hint">${T("단가와 관세율을 넣으면 판정이 나와요", "Enter a unit price and duty rate to get a verdict")}</span>`;
+      if (r.outlier) verdict = `<span class="hint">${T("단가가 우리의 2배를 넘어요. 같은 코드 안의 다른 제품군일 수 있어 판정하지 않아요.", "Unit price is more than twice ours. It may be a different product group within the same code, so no verdict is given.")}</span>`;
+      if (s.koreaDutyUnknown) verdict = `<span class="hint">${T("한국산 관세율을 TARIC에서 확인해야 해서 판정하지 않아요.", "No verdict: the duty rate on Korean goods must be checked in TARIC first.")}</span>`;
       if (r.cbam == null) verdict = `<span class="hint">${esc(tr(r.cbamReason))}</span>`;
       if (r.verdict === "hold") verdict = `<span class="tag hold">${VERDICT().hold}</span> ${T(`우리가 ${eur(r.room)} 낮음`, `we are ${eur(r.room)} lower`)}`;
       if (r.verdict === "match") verdict = `<span class="tag match">${VERDICT().match}</span> ${T(`단가 ${eur(r.needed)} 인하 시 동일 (CBAM의 ${Math.round(r.share * 100)}%)`, `equal if we cut ${eur(r.needed)} (${Math.round(r.share * 100)}% of CBAM)`)}`;
@@ -261,6 +263,7 @@
   // 가격 비교 그래프: 바이어 총비용(단가 + 관세 + CBAM)을 원산지별 가로 막대로. 점선이 우리 총비용.
   function renderChart(s) {
     const el = $("chart");
+    if (s.ok && s.koreaDutyUnknown) { el.innerHTML = `<p class="hint">${T("이 코드는 한국산에도 무역구제 조치가 걸려 있을 수 있어 총비용을 비교하지 않아요. TARIC에서 관세율을 확인하세요.", "Trade defence measures may apply to Korean goods under this code, so total cost is not compared. Check the duty rate in TARIC.")}</p>`; return; }
     if (!s.ok || !(state.ourPrice > 0)) { el.innerHTML = `<p class="hint">${T("우리 단가를 넣으면 그래프가 나와요.", "Enter our unit price to see the chart.")}</p>`; return; }
     const rows = [{ name: T("한국 (우리)", "Korea (us)"), price: state.ourPrice, duty: 0, cbam: s.current.cost, ours: true },
       ...s.comparisons.map((c) => ({ name: nm(c), price: c.price, duty: c.price * c.duty / 100, cbam: c.cbam, c }))];
@@ -289,7 +292,7 @@
       <div class="bars" style="--ref:${(ourTotal / scale * 100).toFixed(2)}%">
         ${rows.map((r) => `<div class="brow${r.ours ? " ours" : ""}"><div class="bname">${esc(r.name)}</div><div class="btrack">${bar(r)}</div><div class="bnote">${note(r)}</div></div>`).join("")}
       </div>
-      <p class="hint">${T(`${s.year}년 수입분, €/톤. CBAM은 모든 원산지에 공식 기본값을 적용했어요.`, `${s.year} imports, €/tonne. CBAM uses official default values for every origin.`)}${rows.some((r) => r.total > cap) ? T(" 우리 총비용의 2배를 넘는 막대는 잘라서 그렸어요.", " Bars above twice our total cost are clipped.") : ""}${missing.length ? T(` 단가나 관세율이 없어 빠진 나라: ${esc(missing.join(", "))}.`, ` Left out for lack of a unit price or duty rate: ${esc(missing.join(", "))}.`) : ""}</p>`;
+      <p class="hint">${T(`${s.year}년 수입분, €/톤. CBAM은 모든 원산지에 공식 기본값을 적용했어요.`, `${s.year} imports, €/tonne. CBAM uses official default values for every origin.`)}${rows.some((r) => r.total > cap) ? T(" 우리 총비용의 2배를 넘는 막대는 잘라서 그렸어요.", " Bars above twice our total cost are clipped.") : ""}${missing.length ? T(` 단가나 관세율이 없거나 단가가 우리의 2배를 넘어 빠진 나라: ${esc(missing.join(", "))}.`, ` Left out (no unit price or duty rate, or unit price over twice ours): ${esc(missing.join(", "))}.`) : ""}</p>`;
   }
 
   let lastSheet = null;
@@ -318,7 +321,7 @@
       costSrc: (dv, route, bm) => `Korea default value ${dv} tCO2e/t${route ? ", production route " + route : ""}, CBAM benchmark ${bm}, certificate price ${eur(82.32, 2)} (Q3 2026, published). Later years assume the same price.`,
       compH: (y) => `Total landed cost vs. alternatives (${y})`, thOrigin: "Origin", thPrice: "Unit price", thDuty: "Duty", thTotal: "Total € / t",
       korea: "Korea (us)", fta: "0% (EU–Korea FTA)", name: (c) => c.nameEn,
-      compSrc: (m, code) => `${m ? "Unit prices: " + S.MARKET_PRICES.source + ", CN " + fmtCode(code) + ". " : ""}CBAM at official default values for every origin. Quality and lead time not included.`,
+      compSrc: (m, code, cl) => `${m ? "Unit prices: " + S.MARKET_PRICES.source + ", CN " + fmtCode(code) + ". " : ""}CBAM at official default values for every origin. Quality and lead time not included.${cl ? " CBAM is shown in full; the price clause is not applied." : ""}`,
       clauseH: "Proposed CBAM price clause",
       clause: (sh, cap) => `Prices exclude CBAM. CBAM per tonne = certificates × certificate price. The supplier bears ${sh}% of it${cap != null ? `, capped at ${eur(cap)} per tonne` : ""}. If verified actual emissions are provided, the certificate count is recalculated.`,
       thSupplier: "Supplier", thBuyer: "Buyer", capped: " (cap)",
@@ -327,10 +330,10 @@
       item: (d) => d.en, verifText: (v) => v.en, headline: (t) => t.headline, pitch: (t) => t.pitch,
       rolesH: "What each team in your company gets", thRole: "Team", thNeed: "What they check", thValue: "Answer",
       roles: (s, ourTotal, v) => [
-        ["Purchasing", "Total landed cost per tonne", ourTotal != null ? `${eur(ourTotal)} incl. CBAM` : `CBAM ${eur(s.current.cost)} on top of unit price`],
+        ["Purchasing", "Total landed cost per tonne", ourTotal != null ? `${eur(ourTotal)} incl. CBAM${state.clause.on ? " (before the price clause)" : ""}` : `CBAM ${eur(s.current.cost)} on top of unit price`],
         ["Finance", "How CBAM moves to 2028", `${eur(s.years[0].cost)} → ${eur(s.years[2].cost)} per tonne${state.clause.on && state.clause.cap != null ? `; our share capped at ${eur(state.clause.cap)}` : ""}`],
         ["Sustainability / ESG", "Emissions basis and verification", `Default ${+s.defaultValue.toFixed(3)} tCO2e/t; ${v.en}`],
-        ["Customs / CBAM declarant", "Data for the declaration", `CN ${fmtCode(s.code)}, ${s.current.certificates.toFixed(4)} certificates / t`],
+        ["Customs / CBAM declarant", "Data for the declaration", `CN ${fmtCode(s.code)}, default value ${+s.defaultValue.toFixed(3)} tCO2e/t (${s.current.certificates.toFixed(4)} certificates / t)`],
       ],
       footer: "Estimate based on EU default values (Implementing Regulations (EU) 2026/1740 and 2025/2620). Not a CBAM declaration and not legal advice. Actual emissions and carbon prices paid in Korea are not included.",
     },
@@ -342,7 +345,7 @@
       costSrc: (dv, route, bm) => `한국 기본값 ${dv} tCO2e/톤${route ? ", 생산경로 " + route : ""}, CBAM 벤치마크 ${bm}, 인증서 가격 ${eur(82.32, 2)}(2026년 3분기 공표). 2027년 이후는 같은 가격을 가정했습니다.`,
       compH: (y) => `경쟁 원산지와 바이어 총비용 비교 (${y}년)`, thOrigin: "원산지", thPrice: "단가", thDuty: "관세", thTotal: "합계 € / 톤",
       korea: "한국 (당사)", fta: "0% (한-EU FTA)", name: (c) => c.nameKo,
-      compSrc: (m, code) => `${m ? "단가: 2025년 독일 수입 평균(Eurostat Comext, CN " + fmtCode(code) + "). " : ""}모든 원산지의 CBAM은 공식 기본값으로 계산했습니다. 품질과 납기는 반영하지 않았습니다.`,
+      compSrc: (m, code, cl) => `${m ? "단가: 2025년 독일 수입 평균(Eurostat Comext, CN " + fmtCode(code) + "). " : ""}모든 원산지의 CBAM은 공식 기본값으로 계산했습니다. 품질과 납기는 반영하지 않았습니다.${cl ? " CBAM은 전액 기준이며 가격 조항은 반영하지 않았습니다." : ""}`,
       clauseH: "CBAM 가격 조항 제안",
       clause: (sh, cap) => `가격에는 CBAM이 포함되지 않습니다. 톤당 CBAM 비용은 인증서 수 × 인증서 가격으로 계산하며, 공급사는 그중 ${sh}%를 부담합니다${cap != null ? `(톤당 ${eur(cap)} 상한)` : ""}. 검증된 실제 배출값을 제공하면 인증서 수를 다시 계산합니다.`,
       thSupplier: "공급사", thBuyer: "바이어", capped: " (상한)",
@@ -351,10 +354,10 @@
       item: (d) => d.ko, verifText: (v) => v.koLong, headline: (t) => t.headlineKo, pitch: (t) => t.pitchKo,
       rolesH: "바이어 회사 안 역할별 핵심", thRole: "담당", thNeed: "확인하는 것", thValue: "답",
       roles: (s, ourTotal, v) => [
-        ["구매", "톤당 총조달비용", ourTotal != null ? `CBAM 포함 ${eur(ourTotal)}` : `단가에 CBAM ${eur(s.current.cost)} 추가`],
+        ["구매", "톤당 총조달비용", ourTotal != null ? `CBAM 포함 ${eur(ourTotal)}${state.clause.on ? " (가격 조항 반영 전)" : ""}` : `단가에 CBAM ${eur(s.current.cost)} 추가`],
         ["재무", "2028년까지 CBAM 변화", `톤당 ${eur(s.years[0].cost)} → ${eur(s.years[2].cost)}${state.clause.on && state.clause.cap != null ? `, 당사 분담 상한 ${eur(state.clause.cap)}` : ""}`],
         ["ESG·지속가능성", "배출 근거와 검증 상태", `기본값 ${+s.defaultValue.toFixed(3)} tCO2e/톤, ${v.koLong}`],
-        ["통관·CBAM 신고", "신고에 필요한 자료", `CN ${fmtCode(s.code)}, 인증서 ${s.current.certificates.toFixed(4)}장/톤`],
+        ["통관·CBAM 신고", "신고에 필요한 자료", `CN ${fmtCode(s.code)}, 기본값 ${+s.defaultValue.toFixed(3)} tCO2e/톤 (인증서 ${s.current.certificates.toFixed(4)}장/톤)`],
       ],
       footer: "EU 기본값(시행규칙 (EU) 2026/1740, 2025/2620)에 따른 추정치입니다. CBAM 신고서나 법률 자문이 아닙니다. 실제 배출값과 한국에서 낸 탄소가격은 반영하지 않았습니다.",
     },
@@ -382,11 +385,11 @@
         <tr class="ours"><td>${L.korea}</td><td>${eur(state.ourPrice)}</td><td>${L.fta}</td><td>${eur(cur.cost)}</td><td>${eur(s.buyerComparisons[0].ourTotal)}</td></tr>
         ${s.buyerComparisons.map((c) => `<tr><td>${esc(L.name(c))}</td><td>${eur(c.price)}</td><td>${c.duty}%</td><td>${eur(c.cbam)}</td><td>${eur(c.rivalTotal)}</td></tr>`).join("")}
         </tbody></table>
-        <div class="src">${L.compSrc(s.marketPricesApply, s.code)}</div>` : "",
+        <div class="src">${L.compSrc(s.marketPricesApply, s.code, !!s.clause)}</div>` : "",
       clause: s.clause ? `<h3>${L.clauseH}</h3>
         <div class="clause">${L.clause(Math.round(state.clause.share * 100), state.clause.cap)}</div>
         <table><thead><tr><th>${L.thYear}</th><th>${L.thCost}</th><th>${L.thSupplier}</th><th>${L.thBuyer}</th></tr></thead><tbody>
-        ${s.clause.map((c) => `<tr><td>${c.year}</td><td>${eur(c.total)}</td><td>${eur(c.seller)}${c.capped ? L.capped : ""}</td><td>${eur(c.buyer)}</td></tr>`).join("")}
+        ${s.clause.map((c) => `<tr><td>${c.year}</td><td>${eur(c.total)}</td><td>${eur(c.seller)}${c.capped ? L.capped : ""}</td><td>${eur(Math.round(c.total) - Math.round(c.seller))}</td></tr>`).join("")}
         </tbody></table>` : "",
       roles: s.roles ? `<h3>${L.rolesH}</h3>
         <table class="roles"><thead><tr><th>${L.thRole}</th><th>${L.thNeed}</th><th>${L.thValue}</th></tr></thead><tbody>
