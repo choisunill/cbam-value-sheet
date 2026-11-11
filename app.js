@@ -37,6 +37,7 @@
     "바이어에게 보낼 제안서 미리보기": "Preview of the sheet for the buyer",
     "단계": "Steps", "CN 코드 1~4자리": "CN code digits 1–4", "CN 코드 5~6자리": "CN code digits 5–6", "CN 코드 7~8자리": "CN code digits 7–8",
     "경쟁국 추가": "Add a competing origin", "메일 제목": "Email subject", "메일 본문": "Email body", "가격 비교 그래프": "Price comparison chart",
+    "보내기 전 점검": "Pre-send check",
     "제안서 언어": "Sheet language", "화면 언어": "Screen language",
     // sheet.js와 catalog.js의 한국어 문구
     "철강": "Steel", "알루미늄": "Aluminium",
@@ -414,6 +415,53 @@
       <footer>${L.footer}</footer>`;
   }
 
+  // 바이어 유형 때문에 달라진 것 세 가지를 그대로 보여 준다. 내용은 제안서 언어를 따른다.
+  function segmentEffects(s) {
+    const L = TEXT[state.lang] || TEXT.en;
+    const shown = { cost: true, compare: s.buyerComparisons.length > 0, clause: !!s.clause, roles: s.roles, values: s.values.length > 0, data: true };
+    const names = { cost: L.costH, compare: L.compH(s.year), clause: L.clauseH, roles: L.rolesH, values: L.valuesH, data: L.dataH };
+    const first = names[s.type.order.find((k) => shown[k])];
+    const mail = (window.CBAM_MESSAGES.SEG[s.segment] || {})[state.lang === "ko" ? "ko" : "en"];
+    return `<div style="margin-top:8px;color:var(--ink)">${T("이 유형이라 바뀐 것", "What this type changes")}</div>
+      <ul style="margin:2px 0 0;padding-left:16px">
+        <li>${T("제안서 제목", "Sheet headline")}: ${esc(L.headline(s.type))}</li>
+        <li>${T("맨 앞 항목", "First section")}: ${esc(first)}</li>
+        <li>${T("메일 안내 문장", "Email sentence")}: ${esc(mail)}</li>
+      </ul>`;
+  }
+
+  // 보내기 전 점검: 지금 입력 상태에서 계산한다. 늘 통과하는 항목은 두지 않는다. [수준, 문구]
+  function preCheck(s) {
+    if (!s.ok) return [["warn", tr(s.reason)]];
+    const out = [];
+    out.push(state.company.trim() && state.buyer.trim()
+      ? ["ok", T("회사명과 바이어명이 들어갔어요.", "Company and buyer names are filled in.")]
+      : ["warn", T("회사명이나 바이어명이 비어 있어요. 제안서에 \"우리 회사 / 바이어\"로 인쇄돼요.", "Company or buyer name is blank. The sheet will print \"Your company / Buyer\".")]);
+    const vLabel = tr((S.VERIFICATION[state.verification] || S.VERIFICATION.none).ko);
+    if (state.verification === "accredited") out.push(["warn", T("검증 상태를 \"EU 인정 검증\"으로 적어요. 검증보고서가 있을 때만 고르세요.", "Verification is stated as EU-accredited. Choose this only if you hold the verification report.")]);
+    else if (!state.verification || state.verification === "none") out.push(["info", T("배출 데이터 검증이 아직 없다고 적혀요. 기본값이 적용된다고 나가요.", "The sheet says emissions data is not yet verified and default values apply.")]);
+    else out.push(["ok", T(`검증 상태를 적었어요: ${vLabel}.`, `Verification status is stated: ${vLabel}.`)]);
+    const isAvg = (origin, price) => price === S.marketPrice(s.code, origin);
+    const prices = [[K.KOREA, state.ourPrice], ...s.buyerComparisons.map((c) => [c.origin, c.price])];
+    const nAvg = prices.filter(([o, p]) => isAvg(o, p)).length;
+    if (!s.buyerComparisons.length) out.push(["info", T("제안서에 넣은 비교 원산지가 없어요. 비교표 없이 나가요.", "No origin is selected for the sheet. It goes out without a comparison table.")]);
+    else if (nAvg === prices.length) out.push(["warn", T("비교표 단가가 모두 시장 평균이에요. 실제 견적가가 아니에요. 제안서에 출처가 적혀요.", "Every unit price in the comparison is a market average, not a real quote. The sheet states the source.")]);
+    else if (nAvg > 0) out.push(["info", T(`시장 평균 단가 ${nAvg}개가 섞여 있어요. 제안서에 * 로 표시돼요.`, `${nAvg} unit price(s) are market averages. They are marked * on the sheet.`)]);
+    else out.push(["ok", T("비교표 단가를 모두 직접 입력했어요.", "All unit prices in the comparison were entered by you.")]);
+    const excluded = s.rivals.filter((r) => !r.verdict).map(nm);
+    if (s.koreaDutyUnknown) out.push(["warn", T("한국산 관세율을 TARIC에서 확인해야 해서 총비용을 비교하지 않았어요.", "Total cost is not compared: the duty rate on Korean goods must be checked in TARIC.")]);
+    else if (excluded.length) out.push(["info", T(`판정에서 빠진 나라: ${excluded.join(", ")} (단가나 관세율이 없거나 단가가 우리의 2배 초과).`, `Left out of the verdict: ${excluded.join(", ")} (no unit price or duty rate, or unit price over twice ours).`)]);
+    else out.push(["ok", T("고른 경쟁국을 모두 판정했어요.", "Every selected origin has a verdict.")]);
+    const c = state.clause;
+    out.push(["info", c.on
+      ? T(`가격 조항이 들어가요 (당사 분담 ${Math.round(c.share * 100)}%${c.cap != null ? `, 톤당 상한 ${eur(c.cap)}` : ""}). 비교표 총비용은 조항 반영 전이라고 적혀요.`, `A price clause is included (our share ${Math.round(c.share * 100)}%${c.cap != null ? `, cap ${eur(c.cap)} per tonne` : ""}). The comparison totals are labelled as before the clause.`)
+      : T("가격 조항 없이 나가요.", "It goes out without a price clause.")]);
+    out.push(s.values.length
+      ? ["ok", T(`가격 외 가치 ${s.values.length}개를 넣었어요. 사실인 것만 골랐는지 확인하세요.`, `${s.values.length} non-price value(s) are included. Make sure each one is true.`)]
+      : ["info", T("가격 외 가치를 고르지 않았어요. 제안서에서 그 항목이 빠져요.", "No non-price value is selected. That section is left out of the sheet.")]);
+    return out;
+  }
+
   function render(rebuildCompare = true) {
     // 처음 판정이 나온 행은 '가격 유지'일 때만 제안서에 넣는다. 이후는 사용자가 정한다.
     let s = S.build(state);
@@ -430,8 +478,9 @@
     const k4 = KN.h4[state.code.slice(0, 4)], k6 = KN.h6[state.code.slice(0, 6)];
     $("codeDesc").innerHTML = info ? `${k4 && !isEn() ? `<span class="ko-name">${esc(k4)}${k6 ? `<br>└ ${esc(k6)}` : ""}</span>` : ""}<span class="en-name">${esc(info.desc)}</span>` : "";
     document.querySelectorAll("#year button").forEach((b) => b.setAttribute("aria-checked", String(Number(b.dataset.y) === state.year)));
-    if (s.ok) $("segment").innerHTML = `<strong>${esc(tr(s.type.label))}</strong>${esc(tr(s.type.why))}<small style="display:block;margin-top:4px;color:var(--ink-3)">${T("예시 분류예요. 바이어를 직접 조사한 결과가 아니라 구매 이론을 적용한 가정이에요.", "Illustrative grouping: an assumption from buying theory, not a survey of buyers.")}</small>`;
+    if (s.ok) $("segment").innerHTML = `<strong>${esc(tr(s.type.label))}</strong>${esc(tr(s.type.why))}${segmentEffects(s)}<small style="display:block;margin-top:4px;color:var(--ink-3)">${T("예시 분류예요. 바이어를 직접 조사한 결과가 아니라 구매 이론을 적용한 가정이에요.", "Illustrative grouping: an assumption from buying theory, not a survey of buyers.")}</small>`;
     $("regCheck").innerHTML = S.regCheck(s, state, isEn()).map((i) => `<li class="${i.level}">${esc(tr(i.text))}</li>`).join("");
+    $("preCheck").innerHTML = preCheck(s).map(([level, text]) => `<li class="${level}">${esc(text)}</li>`).join("");
     lastSheet = s;
     renderMail(s);
     renderChart(s);

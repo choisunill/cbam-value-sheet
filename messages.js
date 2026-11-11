@@ -6,6 +6,13 @@
   const eur = (v) => "€" + Math.round(v).toLocaleString("en-US");
   const fmt = (c) => c.replace(/^(\d{4})(\d{2})(\d{2})$/, "$1 $2 $3");
 
+  // 바이어 유형(sheet.js의 세그먼트)에 따라 제안서에서 무엇을 보라고 할지가 달라진다.
+  const SEG = {
+    cost: { ko: "첨부한 제안서(Buyer Value Sheet)에 톤당 총조달비용을 정리해, 추측 없이 가격을 정하실 수 있게 했습니다.", en: "The attached Buyer Value Sheet shows your total landed cost per tonne, so you can price without guessing." },
+    risk: { ko: "첨부한 제안서(Buyer Value Sheet)에 배출 산정 근거와 검증 상태를 정리해, CBAM 신고와 공급망 탄소 관리에 쓰실 수 있게 했습니다.", en: "The attached Buyer Value Sheet sets out the emissions basis and its verification status, for your CBAM declaration and supply chain carbon reporting." },
+    certainty: { ko: "첨부한 제안서(Buyer Value Sheet)에 2028년까지 연도별 CBAM 비용을 정리해, 프로젝트 예산에 반영하실 수 있게 했습니다.", en: "The attached Buyer Value Sheet shows how the CBAM cost moves each year to 2028, so you can budget for your project." },
+  };
+
   // s: sheet.build 결과, rival: s.comparisons 중 하나 또는 null, opt: { lang, company, buyer, clause:{on,share,cap} }
   function email(s, rival, opt) {
     const ko = opt.lang === "ko";
@@ -20,12 +27,6 @@
     const vals = s.values || [];
     const valsKo = vals.map((v) => v.ko).join(", ");
     const valsEn = vals.map((v) => v.en[0].toLowerCase() + v.en.slice(1)).join("; ");
-    // 바이어 유형(sheet.js의 세그먼트)에 따라 제안서에서 무엇을 보라고 할지가 달라진다.
-    const SEG = {
-      cost: { ko: "첨부한 제안서(Buyer Value Sheet)에 톤당 총조달비용을 정리해, 추측 없이 가격을 정하실 수 있게 했습니다.", en: "The attached Buyer Value Sheet shows your total landed cost per tonne, so you can price without guessing." },
-      risk: { ko: "첨부한 제안서(Buyer Value Sheet)에 배출 산정 근거와 검증 상태를 정리해, CBAM 신고와 공급망 탄소 관리에 쓰실 수 있게 했습니다.", en: "The attached Buyer Value Sheet sets out the emissions basis and its verification status, for your CBAM declaration and supply chain carbon reporting." },
-      certainty: { ko: "첨부한 제안서(Buyer Value Sheet)에 2028년까지 연도별 CBAM 비용을 정리해, 프로젝트 예산에 반영하실 수 있게 했습니다.", en: "The attached Buyer Value Sheet shows how the CBAM cost moves each year to 2028, so you can budget for your project." },
-    };
     const seg = SEG[s.segment] || SEG.cost;
     const lines = [];
 
@@ -74,5 +75,5 @@
     return { subject: `CBAM cost for CN ${code}: our proposal`, body: lines.join("\n") };
   }
 
-  return { email };
+  return { email, SEG };
 });
