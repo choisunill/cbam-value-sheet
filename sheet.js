@@ -165,24 +165,26 @@
     };
   }
 
-  // 규제 진단(TradeGuard 연계). 확인된 규정만 적는다. level: ok | warn | info
-  function regCheck(s, state) {
+  // 규제 진단(TradeGuard 연계). 확인된 규정만 적는다. level: ok | warn | info. en이 참이면 영어 문구.
+  function regCheck(s, state, en) {
     if (!s.ok) return [{ level: "warn", text: s.reason }];
-    const sectorKo = s.sector === "aluminium" ? "알루미늄" : "철강";
+    const L = (ko, e) => (en ? e : ko);
+    const sector = s.sector === "aluminium" ? L("알루미늄", "aluminium") : L("철강", "steel");
+    const dv = +s.defaultValue.toFixed(3);
     const items = [
-      { level: "ok", text: `CBAM 대상 품목이에요 (${sectorKo}).` },
-      { level: "ok", text: `한국산 공식 기본값 ${+s.defaultValue.toFixed(3)} tCO2e/톤${s.route ? ", 생산경로 " + s.route : ""}로 계산했어요.` },
+      { level: "ok", text: L(`CBAM 대상 품목이에요 (${sector}).`, `Covered by CBAM (${sector}).`) },
+      { level: "ok", text: L(`한국산 공식 기본값 ${dv} tCO2e/톤${s.route ? ", 생산경로 " + s.route : ""}로 계산했어요.`, `Calculated with Korea's official default value ${dv} tCO2e/t${s.route ? ", production route " + s.route : ""}.`) },
       state.buyerProfile && state.buyerProfile.exposure === "low"
-        ? { level: "warn", text: "바이어의 연간 CBAM 품목 수입이 50톤 이하면 CBAM이 면제될 수 있어요. 이 경우 비용 분담 요구의 근거가 약해요." }
-        : { level: "info", text: "바이어의 연간 CBAM 품목 수입이 50톤 이하면 면제될 수 있어요. 우리 물량만으로는 판단할 수 없어요." },
-      { level: "info", text: "실제 배출값은 EU 인정 검증을 받아야 쓸 수 있고, 첫 검증보고서는 2027년 1월부터 가능해요. 이 도구는 기본값만 씁니다." },
+        ? { level: "warn", text: L("바이어의 연간 CBAM 품목 수입이 50톤 이하면 CBAM이 면제될 수 있어요. 이 경우 비용 분담 요구의 근거가 약해요.", "If the buyer imports 50 tonnes or less of CBAM goods a year, it may be exempt from CBAM. A request to share the cost then has weak grounds.") }
+        : { level: "info", text: L("바이어의 연간 CBAM 품목 수입이 50톤 이하면 면제될 수 있어요. 우리 물량만으로는 판단할 수 없어요.", "If the buyer imports 50 tonnes or less of CBAM goods a year, it may be exempt. Our volume alone cannot tell.") },
+      { level: "info", text: L("실제 배출값은 EU 인정 검증을 받아야 쓸 수 있고, 첫 검증보고서는 2027년 1월부터 가능해요. 이 도구는 기본값만 씁니다.", "Actual emissions can be used only after EU-accredited verification, and the first verification reports are possible from January 2027. This tool uses default values only.") },
       dutyFlag(s.code, K.KOREA)
-        ? { level: "warn", text: "이 코드는 한국산에도 반덤핑 등 무역구제 조치가 걸려 있을 수 있어요. TARIC에서 확인하세요. 비교표의 한국 관세 0%가 맞지 않을 수 있어요." }
+        ? { level: "warn", text: L("이 코드는 한국산에도 반덤핑 등 무역구제 조치가 걸려 있을 수 있어요. TARIC에서 확인하세요. 비교표의 한국 관세 0%가 맞지 않을 수 있어요.", "Trade defence measures such as anti-dumping may apply to Korean goods under this code. Check TARIC. The 0% duty for Korea in the comparison may not hold.") }
         : defaultDuty(s.code, K.KOREA) === 0
-          ? { level: "ok", text: "한국산 관세 0% (EU TARIC 조회, 한-EU FTA는 원산지 요건을 채워야 적용)." }
-          : { level: "info", text: "이 코드의 한국산 관세율 자료가 없어요. TARIC에서 확인하세요." },
-      ...(DUTY[s.code] && DUTY[s.code].q ? [{ level: "warn", text: `철강 관세할당(쿼터)을 넘는 물량에는 추가관세 ${DUTY[s.code].q}%가 붙어요. 비교표는 쿼터 안 물량 기준이에요.` }] : []),
-      { level: "info", text: "바이어 신고를 도우려면 CN 코드별 물량, 원소재 밀 시트, 생산량을 준비하세요." },
+          ? { level: "ok", text: L("한국산 관세 0% (EU TARIC 조회, 한-EU FTA는 원산지 요건을 채워야 적용).", "0% duty for Korean goods (EU TARIC; the EU–Korea FTA applies only if origin rules are met).") }
+          : { level: "info", text: L("이 코드의 한국산 관세율 자료가 없어요. TARIC에서 확인하세요.", "No duty rate data for Korean goods under this code. Check TARIC.") },
+      ...(DUTY[s.code] && DUTY[s.code].q ? [{ level: "warn", text: L(`철강 관세할당(쿼터)을 넘는 물량에는 추가관세 ${DUTY[s.code].q}%가 붙어요. 비교표는 쿼터 안 물량 기준이에요.`, `Volumes above the steel tariff-rate quota carry an additional ${DUTY[s.code].q}% duty. The comparison assumes in-quota volumes.`) }] : []),
+      { level: "info", text: L("바이어 신고를 도우려면 CN 코드별 물량, 원소재 밀 시트, 생산량을 준비하세요.", "To support the buyer's declaration, prepare volumes by CN code, mill certificates and production volume.") },
     ];
     return items;
   }

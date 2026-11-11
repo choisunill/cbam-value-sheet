@@ -72,6 +72,9 @@ test("규제 진단: 50톤 이하일 수 있으면 경고", () => {
   const st = { ...base, buyerProfile: { exposure: "low" } };
   const items = S.regCheck(S.build(st), st);
   assert.ok(items.some((i) => i.level === "warn" && i.text.includes("50톤")));
+  const en = S.regCheck(S.build(st), st, true);
+  assert.strictEqual(en.length, items.length);
+  assert.ok(en.every((i) => !/[가-힣]/.test(i.text)), "영어판에 한국어가 남지 않는다");
 });
 
 test("협상 메일: 판정별 문장과 숫자", () => {
