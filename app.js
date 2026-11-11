@@ -251,7 +251,7 @@
         <div class="top"><strong>${T(`${esc(r.nameKo)}산과 비교`, `vs. ${esc(r.nameEn)}`)}</strong>
           <span><label class="check" style="margin:0;display:inline-flex"><input type="checkbox" data-i="${i}" data-k="include" ${r.include ? "checked" : ""} ${r.verdict ? "" : "disabled"}> ${T("제안서에 넣기", "Show on sheet")}</label>
           <button type="button" class="remove" data-i="${i}" aria-label="${T(`${esc(r.nameKo)} 빼기`, `Remove ${esc(r.nameEn)}`)}">✕</button></span></div>
-        <div class="cbam">${r.cbam != null ? `CBAM ${eur(r.cbam)}/t · ${T("공식 기본값", "official default value")} ${+r.defaultValue.toFixed(3)} tCO2e/t` : ""}${S.dutyFlag(state.code, r.origin) ? T(" · 반덤핑·상계관세 등이 걸려 있어요. 관세율을 TARIC에서 확인해 넣어 주세요.", " · Anti-dumping or countervailing duties apply. Check the rate in TARIC and enter it.") : ""}</div>
+        <div class="cbam">${r.cbam != null ? `CBAM ${eur(r.cbam)}/t · ${T("공식 기본값", "official default value")} ${+r.defaultValue.toFixed(3)} tCO2e/t` : ""}${Number.isFinite(r.price) ? " · " + (r.price === S.marketPrice(state.code, r.origin) ? T("단가: 시장 평균", "price: market average") : T("단가: 직접 입력", "price: entered by you")) : ""}${S.dutyFlag(state.code, r.origin) ? T(" · 반덤핑·상계관세 등이 걸려 있어요. 관세율을 TARIC에서 확인해 넣어 주세요.", " · Anti-dumping or countervailing duties apply. Check the rate in TARIC and enter it.") : ""}</div>
         <div class="inputs">
           <input type="number" min="0" step="1" data-i="${i}" data-k="price" value="${Number.isFinite(r.price) ? r.price : ""}" placeholder="${T("단가 €/t", "Unit price €/t")}" aria-label="${esc(nm(r))} ${T("단가", "unit price")}">
           <input type="number" min="0" step="0.1" data-i="${i}" data-k="duty" value="${Number.isFinite(r.duty) ? r.duty : ""}" placeholder="${T("관세 %", "Duty %")}" aria-label="${esc(nm(r))} ${T("관세율 %", "duty rate %")}">
@@ -321,7 +321,7 @@
       costSrc: (dv, route, bm) => `Korea default value ${dv} tCO2e/t${route ? ", production route " + route : ""}, CBAM benchmark ${bm}, certificate price ${eur(82.32, 2)} (Q3 2026, published). Later years assume the same price.`,
       compH: (y) => `Total landed cost vs. alternatives (${y})`, thOrigin: "Origin", thPrice: "Unit price", thDuty: "Duty", thTotal: "Total € / t",
       korea: "Korea (us)", fta: "0% (EU–Korea FTA)", name: (c) => c.nameEn,
-      compSrc: (m, code, cl) => `${m ? "Unit prices: " + S.MARKET_PRICES.source + ", CN " + fmtCode(code) + ". " : ""}CBAM at official default values for every origin. Quality and lead time not included.${cl ? " CBAM is shown in full; the price clause is not applied." : ""}`,
+      compSrc: (m, code, cl, avg) => `${m ? "Unit prices: " + S.MARKET_PRICES.source + ", CN " + fmtCode(code) + ". " : avg ? "Unit prices marked * are " + S.MARKET_PRICES.source + "; the others were entered by the supplier. " : "Unit prices as entered by the supplier. "}CBAM at official default values for every origin. Quality and lead time not included.${cl ? " CBAM is shown in full; the price clause is not applied." : ""}`,
       clauseH: "Proposed CBAM price clause",
       clause: (sh, cap) => `Prices exclude CBAM. CBAM per tonne = certificates × certificate price. The supplier bears ${sh}% of it${cap != null ? `, capped at ${eur(cap)} per tonne` : ""}. If verified actual emissions are provided, the certificate count is recalculated.`,
       thSupplier: "Supplier", thBuyer: "Buyer", capped: " (cap)",
@@ -345,7 +345,7 @@
       costSrc: (dv, route, bm) => `한국 기본값 ${dv} tCO2e/톤${route ? ", 생산경로 " + route : ""}, CBAM 벤치마크 ${bm}, 인증서 가격 ${eur(82.32, 2)}(2026년 3분기 공표). 2027년 이후는 같은 가격을 가정했습니다.`,
       compH: (y) => `경쟁 원산지와 바이어 총비용 비교 (${y}년)`, thOrigin: "원산지", thPrice: "단가", thDuty: "관세", thTotal: "합계 € / 톤",
       korea: "한국 (당사)", fta: "0% (한-EU FTA)", name: (c) => c.nameKo,
-      compSrc: (m, code, cl) => `${m ? "단가: 2025년 독일 수입 평균(Eurostat Comext, CN " + fmtCode(code) + "). " : ""}모든 원산지의 CBAM은 공식 기본값으로 계산했습니다. 품질과 납기는 반영하지 않았습니다.${cl ? " CBAM은 전액 기준이며 가격 조항은 반영하지 않았습니다." : ""}`,
+      compSrc: (m, code, cl, avg) => `${m ? "단가: 2025년 독일 수입 평균(Eurostat Comext, CIF 기준·관세 전, CN " + fmtCode(code) + "). " : avg ? "* 표시 단가는 2025년 독일 수입 평균(Eurostat Comext, CIF 기준·관세 전)이고, 나머지는 공급사가 입력한 값입니다. " : "단가는 공급사가 입력한 값입니다. "}모든 원산지의 CBAM은 공식 기본값으로 계산했습니다. 품질과 납기는 반영하지 않았습니다.${cl ? " CBAM은 전액 기준이며 가격 조항은 반영하지 않았습니다." : ""}`,
       clauseH: "CBAM 가격 조항 제안",
       clause: (sh, cap) => `가격에는 CBAM이 포함되지 않습니다. 톤당 CBAM 비용은 인증서 수 × 인증서 가격으로 계산하며, 공급사는 그중 ${sh}%를 부담합니다${cap != null ? `(톤당 ${eur(cap)} 상한)` : ""}. 검증된 실제 배출값을 제공하면 인증서 수를 다시 계산합니다.`,
       thSupplier: "공급사", thBuyer: "바이어", capped: " (상한)",
@@ -369,6 +369,9 @@
     const t = s.type, cur = s.current, today = new Date().toISOString().slice(0, 10);
     const from = state.company.trim() || L.company, to = state.buyer.trim() || L.buyer;
     const other = s.year === 2028 ? s.years[0] : s.years[2];
+    const isAvg = (origin, price) => price === S.marketPrice(s.code, origin);
+    const star = (origin, price) => (!s.marketPricesApply && isAvg(origin, price) ? "*" : "");
+    const anyAvg = isAvg(K.KOREA, state.ourPrice) || s.buyerComparisons.some((c) => isAvg(c.origin, c.price));
     const sections = {
       cost: `<h3>${L.costH}</h3>
         <div class="kpis">
@@ -382,10 +385,10 @@
         <div class="src">${L.costSrc(+s.defaultValue.toFixed(3), s.route, cur.benchmark)}</div>`,
       compare: s.buyerComparisons.length ? `<h3>${L.compH(s.year)}</h3>
         <table><thead><tr><th>${L.thOrigin}</th><th>${L.thPrice}</th><th>${L.thDuty}</th><th>CBAM</th><th>${L.thTotal}</th></tr></thead><tbody>
-        <tr class="ours"><td>${L.korea}</td><td>${eur(state.ourPrice)}</td><td>${L.fta}</td><td>${eur(cur.cost)}</td><td>${eur(s.buyerComparisons[0].ourTotal)}</td></tr>
-        ${s.buyerComparisons.map((c) => `<tr><td>${esc(L.name(c))}</td><td>${eur(c.price)}</td><td>${c.duty}%</td><td>${eur(c.cbam)}</td><td>${eur(c.rivalTotal)}</td></tr>`).join("")}
+        <tr class="ours"><td>${L.korea}</td><td>${eur(state.ourPrice)}${star(K.KOREA, state.ourPrice)}</td><td>${L.fta}</td><td>${eur(cur.cost)}</td><td>${eur(s.buyerComparisons[0].ourTotal)}</td></tr>
+        ${s.buyerComparisons.map((c) => `<tr><td>${esc(L.name(c))}</td><td>${eur(c.price)}${star(c.origin, c.price)}</td><td>${c.duty}%</td><td>${eur(c.cbam)}</td><td>${eur(c.rivalTotal)}</td></tr>`).join("")}
         </tbody></table>
-        <div class="src">${L.compSrc(s.marketPricesApply, s.code, !!s.clause)}</div>` : "",
+        <div class="src">${L.compSrc(s.marketPricesApply, s.code, !!s.clause, anyAvg)}</div>` : "",
       clause: s.clause ? `<h3>${L.clauseH}</h3>
         <div class="clause">${L.clause(Math.round(state.clause.share * 100), state.clause.cap)}</div>
         <table><thead><tr><th>${L.thYear}</th><th>${L.thCost}</th><th>${L.thSupplier}</th><th>${L.thBuyer}</th></tr></thead><tbody>
@@ -427,14 +430,14 @@
     const k4 = KN.h4[state.code.slice(0, 4)], k6 = KN.h6[state.code.slice(0, 6)];
     $("codeDesc").innerHTML = info ? `${k4 && !isEn() ? `<span class="ko-name">${esc(k4)}${k6 ? `<br>└ ${esc(k6)}` : ""}</span>` : ""}<span class="en-name">${esc(info.desc)}</span>` : "";
     document.querySelectorAll("#year button").forEach((b) => b.setAttribute("aria-checked", String(Number(b.dataset.y) === state.year)));
-    if (s.ok) $("segment").innerHTML = `<strong>${esc(tr(s.type.label))}</strong>${esc(tr(s.type.why))}`;
+    if (s.ok) $("segment").innerHTML = `<strong>${esc(tr(s.type.label))}</strong>${esc(tr(s.type.why))}<small style="display:block;margin-top:4px;color:var(--ink-3)">${T("예시 분류예요. 바이어를 직접 조사한 결과가 아니라 구매 이론을 적용한 가정이에요.", "Illustrative grouping: an assumption from buying theory, not a survey of buyers.")}</small>`;
     $("regCheck").innerHTML = S.regCheck(s, state, isEn()).map((i) => `<li class="${i.level}">${esc(tr(i.text))}</li>`).join("");
     lastSheet = s;
     renderMail(s);
     renderChart(s);
     $("shareOut").textContent = Math.round(state.clause.share * 100) + "%";
     $("clauseInputs").hidden = !state.clause.on;
-    $("priceHint").textContent = T("단가는 2025년 독일 수입 평균(Eurostat Comext)으로 채웠어요. 물량이 10톤 미만이라 평균이 없는 칸은 비어 있어요. 실제 견적가로 바꾸면 판정이 바뀌어요.", "Unit prices are pre-filled with 2025 German import averages (Eurostat Comext). Cells are blank where volume was under 10 tonnes and no average exists. Replace them with real quotes and the verdict changes.");
+    $("priceHint").textContent = T("단가는 2025년 독일 수입 평균(Eurostat Comext)으로 채웠어요. CIF 기준이라 독일 국경까지의 운임·보험이 들어 있고 관세는 빠져 있어요. 물량이 10톤 미만이라 평균이 없는 칸은 비어 있어요. 실제 견적가로 바꾸면 판정이 바뀌어요.", "Unit prices are pre-filled with 2025 German import averages (Eurostat Comext). They are CIF values: freight and insurance to the German border included, duty excluded. Cells are blank where volume was under 10 tonnes and no average exists. Replace them with real quotes and the verdict changes.");
     if (rebuildCompare) renderCompare(s);
     else updateVerdicts(s);
     document.querySelectorAll("#lang button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.l === state.lang)));

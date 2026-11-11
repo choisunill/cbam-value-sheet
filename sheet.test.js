@@ -133,3 +133,11 @@ test("판정 제외: 단가가 2배를 넘는 원산지와 한국산 관세가 �
   const k = S.build({ ...base, code: "72191100", rivals: [{ origin: "Taiwan", price: 2000, duty: 0, include: true }] });
   if (k.ok) { assert.ok(k.koreaDutyUnknown); assert.strictEqual(k.comparisons.length, 0); }
 });
+
+test("협상 메일: 바이어 유형에 따라 제안서에서 볼 것을 다르게 안내한다", () => {
+  const M = require("./messages.js");
+  const mail = (profile) => { const s = S.build({ ...base, buyerProfile: profile }); return M.email(s, null, { lang: "en", clause: base.clause }).body; };
+  assert.match(mail({ purpose: "resale" }), /total landed cost per tonne/);
+  assert.match(mail({ esg: true }), /verification status/);
+  assert.match(mail({ purpose: "project" }), /budget for your project/);
+});

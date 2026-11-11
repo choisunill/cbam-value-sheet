@@ -7,7 +7,7 @@
   const YEARS = [2026, 2027, 2028];
 
   // 시장 평균 단가: 2025년 독일 수입 평균(Eurostat Comext, prices-data.js). 물량 10톤 미만인 원산지·코드는 없다.
-  const MARKET_PRICES = { code: "73181588", source: "Eurostat Comext, 2025 Germany import average" };
+  const MARKET_PRICES = { code: "73181588", source: "Eurostat Comext, 2025 Germany import average (CIF, before duty)" }; // 수입 통계값은 신고국 국경 CIF, 관세·세금 제외
   // 경쟁국 관세율(%) 기본값. TARIC에서 확인한 7318 15 88 기준, 대만은 MFN 해석. 다른 코드는 사용자가 확인한다.
   const DEFAULT_RIVALS = ["Taiwan", "India", "Türkiye", "Viet Nam", "China", "Japan"];
 

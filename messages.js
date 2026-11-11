@@ -20,6 +20,13 @@
     const vals = s.values || [];
     const valsKo = vals.map((v) => v.ko).join(", ");
     const valsEn = vals.map((v) => v.en[0].toLowerCase() + v.en.slice(1)).join("; ");
+    // 바이어 유형(sheet.js의 세그먼트)에 따라 제안서에서 무엇을 보라고 할지가 달라진다.
+    const SEG = {
+      cost: { ko: "첨부한 제안서(Buyer Value Sheet)에 톤당 총조달비용을 정리해, 추측 없이 가격을 정하실 수 있게 했습니다.", en: "The attached Buyer Value Sheet shows your total landed cost per tonne, so you can price without guessing." },
+      risk: { ko: "첨부한 제안서(Buyer Value Sheet)에 배출 산정 근거와 검증 상태를 정리해, CBAM 신고와 공급망 탄소 관리에 쓰실 수 있게 했습니다.", en: "The attached Buyer Value Sheet sets out the emissions basis and its verification status, for your CBAM declaration and supply chain carbon reporting." },
+      certainty: { ko: "첨부한 제안서(Buyer Value Sheet)에 2028년까지 연도별 CBAM 비용을 정리해, 프로젝트 예산에 반영하실 수 있게 했습니다.", en: "The attached Buyer Value Sheet shows how the CBAM cost moves each year to 2028, so you can budget for your project." },
+    };
+    const seg = SEG[s.segment] || SEG.cost;
     const lines = [];
 
     if (ko) {
@@ -41,7 +48,7 @@
       } else if (cl) {
         lines.push(`CBAM 비용은 단가와 따로 두고, 당사가 ${share}%를 부담하는 조항${capKo}으로 나누는 방안을 제안드립니다.`);
       }
-      lines.push("", "계산 근거와 출처는 첨부한 제안서(Buyer Value Sheet)에 정리했습니다.", "", "감사합니다.", company);
+      lines.push("", seg.ko, "계산 근거와 출처도 같은 제안서에 있습니다.", "", "감사합니다.", company);
       return { subject: `CN ${code} CBAM 비용 관련 제안`, body: lines.join("\n") };
     }
 
@@ -63,7 +70,7 @@
     } else if (cl) {
       lines.push(`We propose to quote CBAM separately from the unit price and share it under a clause: we bear ${share}%${capEn}.`);
     }
-    lines.push("", "The calculation and sources are set out in the attached Buyer Value Sheet.", "", "Best regards,", company);
+    lines.push("", seg.en, "The calculation and sources are set out in the same sheet.", "", "Best regards,", company);
     return { subject: `CBAM cost for CN ${code}: our proposal`, body: lines.join("\n") };
   }
 
