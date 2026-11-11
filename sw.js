@@ -1,5 +1,5 @@
 // 오프라인에서도 열리도록 앱 파일을 저장해 둔다. 파일을 바꾸면 VERSION을 올린다.
-const VERSION = "v23";
+const VERSION = "v24";
 const FILES = ["./", "index.html", "style.css", "app.js", "sheet.js", "prices-data.js", "duty-data.js", "ko-names.js", "messages.js", "catalog.js", "catalog-data.js", "engine.js", "negotiation.js", "data.js",
   "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", (e) => e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())));

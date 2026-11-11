@@ -141,3 +141,30 @@ test("협상 메일: 바이어 유형에 따라 제안서에서 볼 것을 다�
   assert.match(mail({ esg: true }), /verification status/);
   assert.match(mail({ purpose: "project" }), /budget for your project/);
 });
+
+test("협상 메일: 상황 3종과 제품명", () => {
+  const M = require("./messages.js");
+  const s = S.build(base), tw = s.comparisons.find((c) => c.origin === "Taiwan");
+  const o = { lang: "en", clause: base.clause, product: "Hex bolt M12" };
+  const share = M.email(s, tw, o).body, reprice = M.email(s, tw, { ...o, situation: "reprice" }), data = M.email(s, tw, { ...o, situation: "data" });
+  assert.match(share, /Hex bolt M12, CN 7318 15 88/);
+  assert.match(share, /we bear 50%/);
+  assert.match(reprice.body, /review our price/);
+  assert.doesNotMatch(reprice.body, /we bear 50%/); // 가격 재협상 답장에는 조항을 넣지 않는다
+  assert.match(reprice.subject, /price review/);
+  assert.match(data.body, /we can provide: volume by CN code; mill certificates/);
+  assert.match(data.body, /Verification status: Self-estimated \(not verified\)\./);
+  assert.doesNotMatch(data.body, /€2,269|Taiwan/); // 자료 요청 답장에는 가격 비교를 넣지 않는다
+  const dko = M.email(s, null, { lang: "ko", situation: "data" });
+  assert.match(dko.body, /자료 요청에 감사/);
+  assert.doesNotMatch(M.email(s, null, { lang: "en", situation: "data" }).body, /[가-힣]/);
+});
+
+test("인증서 가격: 다음 분기 값이 나올 때가 지나면 낡았다고 알린다", () => {
+  assert.strictEqual(S.priceStatus(new Date("2026-11-12")).stale, false);
+  assert.strictEqual(S.priceStatus(new Date("2027-01-07")).stale, false);
+  assert.strictEqual(S.priceStatus(new Date("2027-01-09")).stale, true);
+  const st = { ...base };
+  assert.ok(S.regCheck(S.build(st), st, false, new Date("2027-02-01")).some((i) => i.level === "warn" && i.text.includes("인증서 가격")));
+  assert.ok(!S.regCheck(S.build(st), st, false, new Date("2026-11-12")).some((i) => i.level === "warn" && i.text.includes("인증서 가격")));
+});

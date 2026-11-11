@@ -26,8 +26,8 @@
     "가격 조항 제안 넣기": "Include a price clause proposal", "우리 분담률": "Our share", "톤당 상한 (€, 비우면 없음)": "Cap per tonne (€, blank = none)",
     "바이어 회사 안 역할별 핵심 넣기": "Include key points by role in the buyer's company", "배출 데이터 검증 상태": "Emissions data verification status",
     "제안서 PDF로 저장": "Save sheet as PDF", '인쇄 창에서 "PDF로 저장"을 고르세요.': 'Choose "Save as PDF" in the print dialog.',
-    "바이어가 CBAM 분담을 요구할 때": "when the buyer asks you to share CBAM",
-    "3단계의 판정과 가격 조항에 맞춰 답장 초안을 만들어요. 언어는 제안서 언어를 따라요.": "Drafts a reply from the step 3 verdict and the price clause. It follows the sheet language.",
+    "바이어 요구에 답할 때": "replying to the buyer",
+    "상황을 고르면 3단계의 판정과 가격 조항에 맞춰 답장 초안을 만들어요. 언어는 제안서 언어를 따라요.": "Drafts a reply for the chosen situation from the step 3 verdict and the price clause. It follows the sheet language.",
     "비교 기준": "Compare against", "메일 복사": "Copy email", "이전": "Back", "다음": "Next",
     "기본값 경로: 인증서 수 = 기본값 × (1 + 할증) − 벤치마크 × CBAM 계수. 근거 IR 2026/1740, IR 2025/2620, Directive 2003/87, 인증서 가격은 집행위 공표값(2026년 3분기 €82.32). 기본값(2026-08-06판)과 벤치마크(2026-02-06판)는 EU 집행위 공개 Excel에서 가져왔습니다.":
       "Default value route: certificates = default value × (1 + mark-up) − benchmark × CBAM factor. Basis: IR 2026/1740, IR 2025/2620, Directive 2003/87; certificate price as published by the Commission (Q3 2026, €82.32). Default values (2026-08-06 edition) and benchmarks (2026-02-06 edition) come from the European Commission's published Excel files.",
@@ -38,6 +38,9 @@
     "단계": "Steps", "CN 코드 1~4자리": "CN code digits 1–4", "CN 코드 5~6자리": "CN code digits 5–6", "CN 코드 7~8자리": "CN code digits 7–8",
     "경쟁국 추가": "Add a competing origin", "메일 제목": "Email subject", "메일 본문": "Email body", "가격 비교 그래프": "Price comparison chart",
     "보내기 전 점검": "Pre-send check",
+    "제품명·규격 (선택)": "Product name and spec (optional)", "예: 육각볼트 M12×50, 강도 10.9": "e.g. Hex bolt M12×50, property class 10.9",
+    "증빙 파일 목록 (파일 이름만 적혀요. 파일은 올라가지 않아요)": "Supporting documents (only file names are listed; nothing is uploaded)",
+    "상황": "Situation",
     "제안서 언어": "Sheet language", "화면 언어": "Screen language",
     // sheet.js와 catalog.js의 한국어 문구
     "철강": "Steel", "알루미늄": "Aluminium",
@@ -72,7 +75,7 @@
       company: "", buyer: "", buyerProfile: { relation: "existing", industry: "distributor", purpose: "resale", exposure: "unknown", esg: false }, roles: true,
       values: { relationship: false, lead: false, supply: false, quality: false, support: true },
       dataItems: { cn: true, mill: true, volume: true, installation: false },
-      verification: "none", clause: { on: true, share: 0.5, cap: 120 }, lang: UI0, ui: UI0,
+      verification: "none", clause: { on: true, share: 0.5, cap: 120 }, lang: UI0, ui: UI0, product: "", evidence: [], mailSituation: "share",
     };
   }
 
@@ -132,6 +135,8 @@
       `<label class="check"><input type="checkbox" data-k="${k}"> ${esc(ke(v))}</label>`).join("");
     $("dataItems").innerHTML = `<span>${T("제안서에 적을 제공 자료", "Data to list on the sheet")}</span>` + Object.entries(S.DATA_ITEMS).map(([k, v]) =>
       `<label class="check"><input type="checkbox" data-k="${k}"> ${esc(ke(v))}</label>`).join("");
+    $("mailSituation").innerHTML = [["share", T("CBAM 비용 분담 요구", "Buyer asks us to share CBAM")], ["reprice", T("가격 재협상 요구", "Buyer asks for a lower price")], ["data", T("배출 자료 요청", "Buyer asks for emissions data")]]
+      .map(([v, t]) => `<option value="${v}">${t}</option>`).join("");
     $("verification").innerHTML = Object.entries(S.VERIFICATION).map(([k, v]) => `<option value="${k}">${esc(tr(v.ko))}</option>`).join("");
   }
 
@@ -147,6 +152,9 @@
     showCode(state.code);
     $("qty").value = Number.isFinite(state.qty) ? state.qty : "";
     $("company").value = state.company;
+    $("product").value = state.product || "";
+    $("mailSituation").value = state.mailSituation || "share";
+    renderEvidence();
     $("buyer").value = state.buyer;
     $("ourPrice").value = Number.isFinite(state.ourPrice) ? state.ourPrice : "";
     $("clauseOn").checked = state.clause.on;
@@ -195,6 +203,20 @@
   });
   [["qty", "qty"], ["ourPrice", "ourPrice"]].forEach(([id, k]) => $(id).addEventListener("input", (e) => { state[k] = num(e.target.value); render(); }));
   [["company", "company"], ["buyer", "buyer"]].forEach(([id, k]) => $(id).addEventListener("input", (e) => { state[k] = e.target.value; render(); }));
+  $("product").addEventListener("input", (e) => { state.product = e.target.value; render(false); });
+  $("mailSituation").addEventListener("change", (e) => { state.mailSituation = e.target.value; renderMail(lastSheet); save(); });
+  // 증빙은 파일 이름만 적는다. 파일 내용은 읽지도 보내지도 않는다.
+  function renderEvidence() {
+    $("evidenceList").innerHTML = (state.evidence || []).map((n, i) => `<li>${esc(n)} <button type="button" class="remove" data-i="${i}" aria-label="${T("빼기", "Remove")} ${esc(n)}">✕</button></li>`).join("");
+  }
+  $("evidence").addEventListener("change", (e) => {
+    state.evidence = [...new Set([...(state.evidence || []), ...[...e.target.files].map((f) => f.name)])];
+    e.target.value = ""; renderEvidence(); render(false);
+  });
+  $("evidenceList").addEventListener("click", (e) => {
+    const b = e.target.closest(".remove");
+    if (b) { state.evidence.splice(Number(b.dataset.i), 1); renderEvidence(); render(false); }
+  });
   $("clauseOn").addEventListener("change", (e) => { state.clause.on = e.target.checked; render(); });
   $("share").addEventListener("input", (e) => { state.clause.share = Number(e.target.value) / 100; render(); });
   $("cap").addEventListener("input", (e) => { const v = num(e.target.value); state.clause.cap = Number.isFinite(v) ? v : null; render(); });
@@ -223,7 +245,8 @@
   $("demo").addEventListener("click", () => {
     state = {
       ...freshState(), lang: state.lang, ui: state.ui,
-      company: T("한빛볼트(주)", "Hanbit Bolt Co., Ltd."), buyer: "Muster GmbH",
+      company: T("한빛볼트(주)", "Hanbit Bolt Co., Ltd."), buyer: "Muster GmbH", mailSituation: state.mailSituation,
+      product: T("육각볼트 M12×50, 강도 10.9", "Hex bolt M12×50, property class 10.9"),
       buyerProfile: { relation: "existing", industry: "distributor", purpose: "resale", exposure: "high", esg: false },
       values: { relationship: true, lead: true, supply: false, quality: true, support: true },
       verification: "self",
@@ -299,16 +322,23 @@
   let lastSheet = null;
   // 협상 메일: 판정이 나온 경쟁국 중 고른 것을 기준으로 쓴다. 언어는 제안서 언어를 따른다.
   function renderMail(s) {
-    if (!s || !s.ok) { $("mailSubject").value = ""; $("mailBody").value = ""; return; }
+    if (!s || !s.ok) { $("mailSubject").value = ""; $("mailBody").value = ""; $("mailCheck").value = ""; return; }
     const opts = s.comparisons;
     if (!opts.some((c) => c.origin === state.mailRival)) state.mailRival = (opts.find((c) => c.verdict === "hold") || opts[0] || {}).origin || "";
     $("mailRival").innerHTML = opts.map((c) => `<option value="${esc(c.origin)}">${T(`${esc(c.nameKo)}산 대비`, `vs. ${esc(c.nameEn)}`)} · ${VERDICT()[c.verdict]}</option>`).join("")
       + `<option value="">${T("비교 없이 (가격 조항만)", "No comparison (price clause only)")}</option>`;
     $("mailRival").value = state.mailRival;
     const rival = opts.find((c) => c.origin === state.mailRival) || null;
-    const m = window.CBAM_MESSAGES.email(s, rival, { lang: state.lang, company: state.company, buyer: state.buyer, clause: state.clause, relation: s.relation });
+    $("mailRival").disabled = state.mailSituation === "data"; // 자료 요청 답장은 가격 비교를 쓰지 않는다
+    const opt = { lang: state.lang, company: state.company, buyer: state.buyer, clause: state.clause, relation: s.relation, situation: state.mailSituation, product: state.product };
+    const m = window.CBAM_MESSAGES.email(s, rival, opt);
     $("mailSubject").value = m.subject;
     $("mailBody").value = m.body;
+    // 보내는 메일과 같은 내용을 다른 언어로 나란히 보여 준다(확인용).
+    const other = state.lang === "ko" ? "en" : "ko";
+    const c = window.CBAM_MESSAGES.email(s, rival, { ...opt, lang: other });
+    $("mailCheck").value = c.subject + "\n\n" + c.body;
+    $("mailCheckLabel").textContent = other === "ko" ? T("한국어 확인본 (참고용, 보내는 메일은 위쪽)", "Korean check copy (for reference; the email to send is above)") : T("영어본 (참고용, 보내는 메일은 위쪽)", "English copy (for reference; the email to send is above)");
     $("mailCopied").textContent = "";
   }
 
@@ -327,6 +357,7 @@
       clause: (sh, cap) => `Prices exclude CBAM. CBAM per tonne = certificates × certificate price. The supplier bears ${sh}% of it${cap != null ? `, capped at ${eur(cap)} per tonne` : ""}. If verified actual emissions are provided, the certificate count is recalculated.`,
       thSupplier: "Supplier", thBuyer: "Buyer", capped: " (cap)",
       valuesH: "Beyond price", rel: (r) => r.en,
+      evid: "Supporting documents (available on request):",
       dataH: "Emissions data we provide", tbd: "To be agreed.", verif: "Verification status:",
       item: (d) => d.en, verifText: (v) => v.en, headline: (t) => t.headline, pitch: (t) => t.pitch,
       rolesH: "What each team in your company gets", thRole: "Team", thNeed: "What they check", thValue: "Answer",
@@ -351,6 +382,7 @@
       clause: (sh, cap) => `가격에는 CBAM이 포함되지 않습니다. 톤당 CBAM 비용은 인증서 수 × 인증서 가격으로 계산하며, 공급사는 그중 ${sh}%를 부담합니다${cap != null ? `(톤당 ${eur(cap)} 상한)` : ""}. 검증된 실제 배출값을 제공하면 인증서 수를 다시 계산합니다.`,
       thSupplier: "공급사", thBuyer: "바이어", capped: " (상한)",
       valuesH: "가격 외에 드리는 가치", rel: (r) => r.ko,
+      evid: "증빙 문서 (요청 시 제공):",
       dataH: "제공하는 배출 자료", tbd: "협의해 정합니다.", verif: "검증 상태:",
       item: (d) => d.ko, verifText: (v) => v.koLong, headline: (t) => t.headlineKo, pitch: (t) => t.pitchKo,
       rolesH: "바이어 회사 안 역할별 핵심", thRole: "담당", thNeed: "확인하는 것", thValue: "답",
@@ -402,11 +434,12 @@
       values: s.values.length ? `<h3>${L.valuesH}</h3><ul>${s.values.map((v) => `<li>${esc(L.item(v))}</li>`).join("")}</ul>` : "",
       data: `<h3>${L.dataH}</h3>
         ${s.dataProvided.length ? `<ul>${s.dataProvided.map((d) => `<li>${esc(L.item(d))}</li>`).join("")}</ul>` : `<p>${L.tbd}</p>`}
-        <div class="status"><strong>${L.verif}</strong> ${esc(L.verifText(s.verification))}</div>`,
+        <div class="status"><strong>${L.verif}</strong> ${esc(L.verifText(s.verification))}</div>
+        ${(state.evidence || []).length ? `<div class="status"><strong>${L.evid}</strong> ${esc(state.evidence.join(", "))}</div>` : ""}`,
     };
     return `<header>
         <div><div class="eyebrow">Buyer Value Sheet · EU CBAM · CN ${fmtCode(s.code)}</div><h1>${esc(L.headline(t))}</h1></div>
-        <div class="meta">${L.from} <strong>${esc(from)}</strong><br>${L.to} <strong>${esc(to)}</strong><br>CN ${fmtCode(s.code)}<br>${today}</div>
+        <div class="meta">${L.from} <strong>${esc(from)}</strong><br>${L.to} <strong>${esc(to)}</strong><br>${state.product && state.product.trim() ? esc(state.product.trim()) + "<br>" : ""}CN ${fmtCode(s.code)}<br>${today}</div>
       </header>
       <p class="pitch">${esc(L.rel(s.relationText))}</p>
       <p class="pitch">${esc(L.pitch(t))}</p>
@@ -428,6 +461,20 @@
         <li>${T("맨 앞 항목", "First section")}: ${esc(first)}</li>
         <li>${T("메일 안내 문장", "Email sentence")}: ${esc(mail)}</li>
       </ul>`;
+  }
+
+  // 한눈에 요약: 입력값을 정해진 규칙으로 줄인 것. AI를 쓰지 않는다(입력값을 기기 밖으로 보내지 않기 위해).
+  function summaryHTML(s) {
+    if (!s.ok) return "";
+    const lower = s.comparisons.filter((c) => c.verdict === "hold").length, c = state.clause, pct = Math.round(c.share * 100);
+    const lines = [
+      `CN ${fmtCode(s.code)}${state.product && state.product.trim() ? " · " + esc(state.product.trim()) : ""}`,
+      T(`${s.year}년 톤당 CBAM ${eur(s.current.cost, 2)}${s.total ? `, 연 ${s.qty.toLocaleString("ko-KR")}톤이면 ${eur(s.total)}` : ""}`, `CBAM ${eur(s.current.cost, 2)} per tonne in ${s.year}${s.total ? `, ${eur(s.total)} for ${s.qty.toLocaleString("en-US")} t a year` : ""}`),
+      s.comparisons.length ? T(`비교한 ${s.comparisons.length}개국 중 ${lower}개국보다 바이어 총비용이 낮음`, `Buyer's total cost is lower than ${lower} of the ${s.comparisons.length} origins compared`) : T("비교한 원산지 없음", "No origin compared"),
+      c.on ? T(`가격 조항: 당사 분담 ${pct}%${c.cap != null ? `, 톤당 상한 ${eur(c.cap)}` : ""}`, `Price clause: our share ${pct}%${c.cap != null ? `, cap ${eur(c.cap)} per tonne` : ""}`) : T("가격 조항 없음", "No price clause"),
+      T("바이어 유형: ", "Buyer type: ") + esc(tr(s.type.label)),
+    ];
+    return `<strong>${T("한눈에 요약", "At a glance")}</strong>${lines.join("<br>")}<small style="display:block;margin-top:4px;color:var(--ink-3)">${T("입력값을 정해진 규칙으로 줄인 요약이에요. AI를 쓰지 않아요.", "Built from your inputs by fixed rules. No AI is used.")}</small>`;
   }
 
   // 보내기 전 점검: 지금 입력 상태에서 계산한다. 늘 통과하는 항목은 두지 않는다. [수준, 문구]
@@ -480,6 +527,7 @@
     document.querySelectorAll("#year button").forEach((b) => b.setAttribute("aria-checked", String(Number(b.dataset.y) === state.year)));
     if (s.ok) $("segment").innerHTML = `<strong>${esc(tr(s.type.label))}</strong>${esc(tr(s.type.why))}${segmentEffects(s)}<small style="display:block;margin-top:4px;color:var(--ink-3)">${T("예시 분류예요. 바이어를 직접 조사한 결과가 아니라 구매 이론을 적용한 가정이에요.", "Illustrative grouping: an assumption from buying theory, not a survey of buyers.")}</small>`;
     $("regCheck").innerHTML = S.regCheck(s, state, isEn()).map((i) => `<li class="${i.level}">${esc(tr(i.text))}</li>`).join("");
+    $("summary").innerHTML = summaryHTML(s);
     $("preCheck").innerHTML = preCheck(s).map(([level, text]) => `<li class="${level}">${esc(text)}</li>`).join("");
     lastSheet = s;
     renderMail(s);

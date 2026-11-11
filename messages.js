@@ -19,7 +19,11 @@
     const buyer = (opt.buyer || "").trim() || (ko ? "담당자" : "Sir or Madam");
     const company = (opt.company || "").trim() || (ko ? "[회사명]" : "[Company]");
     const code = fmt(s.code), cost = eur(s.current.cost), year = s.year;
-    const cl = opt.clause && opt.clause.on ? opt.clause : null;
+    // 상황: share(CBAM 분담 요구, 기본) / reprice(가격 재협상: 조항 없이 단가로 답한다) / data(배출 자료 요청)
+    const sit = opt.situation || "share";
+    const cl = sit !== "reprice" && opt.clause && opt.clause.on ? opt.clause : null;
+    const prod = (opt.product || "").trim();
+    const label = prod ? `${prod}, CN ${code}` : `CN ${code}`;
     const share = cl ? Math.round(cl.share * 100) : 0;
     const capEn = cl && cl.cap != null ? `, capped at ${eur(cl.cap)} per tonne` : "";
     const capKo = cl && cl.cap != null ? `(톤당 ${eur(cl.cap)} 상한)` : "";
@@ -29,12 +33,30 @@
     const valsEn = vals.map((v) => v.en[0].toLowerCase() + v.en.slice(1)).join("; ");
     const seg = SEG[s.segment] || SEG.cost;
     const lines = [];
+    if (sit === "data") {
+      const items = s.dataProvided || [], dv = +s.defaultValue.toFixed(3);
+      if (ko) {
+        lines.push(`${buyer}님께,`, "", "CBAM 자료 요청에 감사드립니다.",
+          `당사 제품(${label})에 대해 드릴 수 있는 자료는 다음과 같습니다: ${items.map((d) => d.ko).join(", ") || "협의해 정하겠습니다"}.`,
+          `배출 데이터 검증 상태: ${s.verification.koLong}`,
+          `검증된 실제 배출값이 나오기 전에는 EU 공식 기본값(${dv} tCO2e/톤)이 적용되며, 이 기준으로 ${year}년 수입분 CBAM 비용은 톤당 ${cost}입니다.`,
+          "", seg.ko, "계산 근거와 출처도 같은 제안서에 있습니다.", "", "감사합니다.", company);
+        return { subject: `CN ${code} CBAM 자료 제공`, body: lines.join("\n") };
+      }
+      lines.push(`Dear ${buyer},`, "", "Thank you for your request for CBAM data.",
+        `For our product (${label}), we can provide: ${items.map((d) => d.en[0].toLowerCase() + d.en.slice(1)).join("; ") || "to be agreed"}.`,
+        `Verification status: ${s.verification.en.replace(/\.$/, "")}.`,
+        `Until verified actual emissions are available, EU default values apply (${dv} tCO2e/t). On that basis, CBAM is ${cost} per tonne for ${year} imports.`,
+        "", seg.en, "The calculation and sources are set out in the same sheet.", "", "Best regards,", company);
+      return { subject: `CBAM data for CN ${code}`, body: lines.join("\n") };
+    }
 
     if (ko) {
       lines.push(`${buyer}님께,`, "");
-      if (opt.relation === "new") lines.push("CBAM으로 공급처를 다시 검토하고 계신다면, 당사를 비교 대상에 넣어 주시기를 제안드립니다.");
+      if (sit === "reprice") lines.push("가격 검토 요청에 감사드립니다. CBAM을 포함한 총비용 기준으로 당사의 생각을 말씀드립니다.");
+      else if (opt.relation === "new") lines.push("CBAM으로 공급처를 다시 검토하고 계신다면, 당사를 비교 대상에 넣어 주시기를 제안드립니다.");
       else lines.push("그동안의 거래에 감사드립니다. CBAM 비용을 어떻게 다룰지 당사의 생각을 말씀드립니다.");
-      lines.push(`EU 공식 기본값으로 계산하면 당사 제품(CN ${code})의 ${year}년 수입분 CBAM 비용은 톤당 ${cost}입니다.`);
+      lines.push(`EU 공식 기본값으로 계산하면 당사 제품(${label})의 ${year}년 수입분 CBAM 비용은 톤당 ${cost}입니다.`);
       if (rival && rival.verdict === "hold") {
         lines.push(`CBAM을 포함해도 당사 제품의 바이어 총비용은 톤당 ${eur(rival.ourTotal)}로, ${rival.nameKo}산 대체 공급(톤당 ${eur(rival.rivalTotal)})보다 ${eur(rival.room)} 낮습니다.`);
         lines.push("그래서 현재 단가를 유지하는 것을 제안드립니다.");
@@ -49,14 +71,16 @@
       } else if (cl) {
         lines.push(`CBAM 비용은 단가와 따로 두고, 당사가 ${share}%를 부담하는 조항${capKo}으로 나누는 방안을 제안드립니다.`);
       }
+      if (sit === "reprice" && !rival) lines.push("대체 견적을 알려 주시면 같은 기준으로 다시 비교해 드리겠습니다.");
       lines.push("", seg.ko, "계산 근거와 출처도 같은 제안서에 있습니다.", "", "감사합니다.", company);
-      return { subject: `CN ${code} CBAM 비용 관련 제안`, body: lines.join("\n") };
+      return { subject: sit === "reprice" ? `CN ${code} 가격 검토 요청에 대한 회신` : `CN ${code} CBAM 비용 관련 제안`, body: lines.join("\n") };
     }
 
     lines.push(`Dear ${buyer},`, "");
-    if (opt.relation === "new") lines.push("If CBAM has led you to review your sources, we would like to be considered.");
+    if (sit === "reprice") lines.push("Thank you for your request to review our price. Here is our view, based on your total cost including CBAM.");
+    else if (opt.relation === "new") lines.push("If CBAM has led you to review your sources, we would like to be considered.");
     else lines.push("Thank you for your continued business. Here is how we propose to handle the CBAM cost.");
-    lines.push(`Using official EU default values, CBAM on our product (CN ${code}) is ${cost} per tonne for ${year} imports.`);
+    lines.push(`Using official EU default values, CBAM on our product (${label}) is ${cost} per tonne for ${year} imports.`);
     if (rival && rival.verdict === "hold") {
       lines.push(`Even with CBAM included, your total landed cost from us is ${eur(rival.ourTotal)} per tonne, ${eur(rival.room)} lower than comparable supply from ${rival.nameEn} (${eur(rival.rivalTotal)} per tonne).`);
       lines.push("We therefore propose to keep our current price.");
@@ -71,8 +95,9 @@
     } else if (cl) {
       lines.push(`We propose to quote CBAM separately from the unit price and share it under a clause: we bear ${share}%${capEn}.`);
     }
+    if (sit === "reprice" && !rival) lines.push("If you share the alternative quote, we will compare it on the same basis.");
     lines.push("", seg.en, "The calculation and sources are set out in the same sheet.", "", "Best regards,", company);
-    return { subject: `CBAM cost for CN ${code}: our proposal`, body: lines.join("\n") };
+    return { subject: sit === "reprice" ? `Your price review request: CN ${code}` : `CBAM cost for CN ${code}: our proposal`, body: lines.join("\n") };
   }
 
   return { email, SEG };

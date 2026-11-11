@@ -1,9 +1,9 @@
 // 바이어 제안서(Buyer Value Sheet) 내용을 만드는 순수 함수. 화면과 분리해 테스트한다.
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
-    module.exports = factory(require("./catalog.js"), require("./negotiation.js"), require("./prices-data.js"), require("./duty-data.js"));
-  } else root.CBAM_SHEET = factory(root.CBAM_CATALOG, root.CBAM_NEGOTIATION, root.CBAM_PRICES, root.CBAM_DUTY);
-})(typeof globalThis !== "undefined" ? globalThis : this, function (K, N, PRICES, DUTY) {
+    module.exports = factory(require("./catalog.js"), require("./negotiation.js"), require("./prices-data.js"), require("./duty-data.js"), require("./data.js"));
+  } else root.CBAM_SHEET = factory(root.CBAM_CATALOG, root.CBAM_NEGOTIATION, root.CBAM_PRICES, root.CBAM_DUTY, root.CBAM_DATA);
+})(typeof globalThis !== "undefined" ? globalThis : this, function (K, N, PRICES, DUTY, DATA) {
   const YEARS = [2026, 2027, 2028];
 
   // 시장 평균 단가: 2025년 독일 수입 평균(Eurostat Comext, prices-data.js). 물량 10톤 미만인 원산지·코드는 없다.
@@ -171,8 +171,16 @@
     };
   }
 
+  // 인증서 가격 기준과 낡았는지. 분기 가격은 분기가 끝난 다음 첫 주에 공표되므로, 다음 분기 말 + 7일이 지나면 새 값이 나왔다고 본다.
+  // shortcut: 자동으로 받아 오지 않는다(서버 없음). 새 값은 data.js를 고쳐서 넣는다.
+  function priceStatus(today = new Date()) {
+    const [y, q] = DATA.latestPublishedPrice.period.split("Q").map(Number);
+    const due = Date.UTC(y, q * 3 + 3, 0) + 7 * 864e5;
+    return { year: y, quarter: q, asOf: DATA.asOf, stale: today.getTime() > due };
+  }
+
   // 규제 진단(TradeGuard 연계). 확인된 규정만 적는다. level: ok | warn | info. en이 참이면 영어 문구.
-  function regCheck(s, state, en) {
+  function regCheck(s, state, en, today) {
     if (!s.ok) return [{ level: "warn", text: s.reason }];
     const L = (ko, e) => (en ? e : ko);
     const sector = s.sector === "aluminium" ? L("알루미늄", "aluminium") : L("철강", "steel");
@@ -191,9 +199,12 @@
           : { level: "info", text: L("이 코드의 한국산 관세율 자료가 없어요. TARIC에서 확인하세요.", "No duty rate data for Korean goods under this code. Check TARIC.") },
       ...(DUTY[s.code] && DUTY[s.code].q ? [{ level: "warn", text: L(`철강 관세할당(쿼터)을 넘는 물량에는 추가관세 ${DUTY[s.code].q}%가 붙어요. 비교표는 쿼터 안 물량 기준이에요.`, `Volumes above the steel tariff-rate quota carry an additional ${DUTY[s.code].q}% duty. The comparison assumes in-quota volumes.`) }] : []),
       { level: "info", text: L("바이어 신고를 도우려면 CN 코드별 물량, 원소재 밀 시트, 생산량을 준비하세요.", "To support the buyer's declaration, prepare volumes by CN code, mill certificates and production volume.") },
+      ((p) => p.stale
+        ? { level: "warn", text: L(`새 분기 인증서 가격이 공표됐을 거예요. 이 도구는 아직 ${p.year}년 ${p.quarter}분기 가격을 써요. 집행위 가격 페이지를 확인하세요.`, `A newer certificate price has probably been published. This tool still uses Q${p.quarter} ${p.year}. Check the Commission's price page.`) }
+        : { level: "ok", text: L(`인증서 가격은 ${p.year}년 ${p.quarter}분기 공표값으로 최신이에요 (자료 기준일 ${p.asOf}). 다음 분기 값은 분기가 끝난 다음 첫 주에 공표돼요.`, `The certificate price is the latest published one, Q${p.quarter} ${p.year} (data as of ${p.asOf}). The next quarter's price is published in the first week after the quarter ends.`) })(priceStatus(today)),
     ];
     return items;
   }
 
-  return { YEARS, MARKET_PRICES, DEFAULT_RIVALS, QUESTIONS, SEGMENTS, segmentFor, RELATION, VALUE_ITEMS, VERIFICATION, DATA_ITEMS, defaultDuty, dutyFlag, marketPrice, build, regCheck };
+  return { YEARS, MARKET_PRICES, DEFAULT_RIVALS, QUESTIONS, SEGMENTS, segmentFor, RELATION, VALUE_ITEMS, VERIFICATION, DATA_ITEMS, defaultDuty, dutyFlag, marketPrice, build, regCheck, priceStatus };
 });
