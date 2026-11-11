@@ -16,14 +16,14 @@
   // 수정 재구매: 바이어가 공급 조건과 공급사를 다시 따져 보는 상황. 기존 거래처는 지키고, 신규 제안은 그 틈에 들어간다.
   const RELATION = {
     existing: {
-      label: "기존 거래처 (지키기)",
-      en: "You already buy from us. CBAM is a reason to review terms, not to change supplier: below is what it costs and how we propose to handle it together.",
-      ko: "귀사는 이미 당사와 거래하고 있습니다. CBAM은 공급사를 바꿀 이유가 아니라 조건을 함께 점검할 계기입니다. 비용이 얼마이고 어떻게 함께 다룰지 아래에 정리했습니다.",
+      label: "기존 거래처",
+      en: "This sheet sets out what CBAM adds to the cost of our existing business and how we propose to handle it.",
+      ko: "귀사와의 기존 거래에 CBAM으로 추가되는 비용과 당사의 처리 방안을 아래에 정리했습니다.",
     },
     new: {
-      label: "신규 제안 (들어가기)",
-      en: "CBAM changes the cost of every supplier you use today. If you are reviewing your sources, this sheet lets you compare us on total landed cost and on the data we provide.",
-      ko: "CBAM은 귀사가 지금 쓰는 모든 공급사의 비용을 바꿉니다. 공급처를 다시 검토하신다면, 이 자료로 당사를 총조달비용과 제공 자료 기준에서 비교해 보실 수 있습니다.",
+      label: "신규 거래처",
+      en: "If you are reviewing your sources, this sheet lets you compare us on total landed cost and on the data we provide.",
+      ko: "공급처를 검토하실 때 당사를 총조달비용과 제공 자료 기준으로 비교하실 수 있도록 정리했습니다.",
     },
   };
   const relationOf = (state) => (state.buyerProfile && RELATION[state.buyerProfile.relation] ? state.buyerProfile.relation : "existing");
@@ -40,36 +40,36 @@
   const QUESTIONS = {
     industry: { ko: "업종", options: { distributor: "유통·수입상", manufacturer: "자동차·기계 부품 제조", construction: "건설·프로젝트" } },
     purpose: { ko: "구매 목적", options: { resale: "재판매", production: "생산에 투입", project: "프로젝트 납품" } },
-    exposure: { ko: "규제 노출 (바이어의 연간 CBAM 품목 수입)", options: { high: "50톤 넘음", low: "50톤 이하일 수 있음", unknown: "모름" } },
+    exposure: { ko: "바이어의 연간 CBAM 품목 수입량", options: { high: "50톤 초과", low: "50톤 이하 가능", unknown: "미확인" } },
   };
 
   const SEGMENTS = {
     cost: {
       label: "비용 중심",
-      why: "재판매용으로 사서 단가와 총조달비용이 가장 중요한 바이어예요. 비용 → 경쟁 비교 순서로 보여 줘요.",
-      headline: "Know the CBAM cost of every tonne before you quote.",
-      pitch: "As the EU importer you pay CBAM. We give you the cost per tonne, how it moves to 2028, and the data your declaration needs, so you can price without guessing.",
-      headlineKo: "톤마다 CBAM 비용을 미리 알고 견적하세요.",
-      pitchKo: "CBAM은 EU 수입자인 귀사가 냅니다. 톤당 비용, 2028년까지의 변화, 신고에 필요한 자료를 드려 추측 없이 가격을 정할 수 있게 합니다.",
+      why: "재판매 목적. 단가와 총조달비용을 먼저 봅니다. 제안서는 비용, 원산지 비교 순입니다.",
+      headline: "CBAM cost per tonne and total landed cost",
+      pitch: "As the EU importer, you pay CBAM. This sheet gives the cost per tonne, how it changes to 2028, and the data your declaration needs.",
+      headlineKo: "톤당 CBAM 비용과 총조달비용 안내",
+      pitchKo: "CBAM은 EU 수입자인 귀사가 납부합니다. 톤당 비용, 2028년까지의 변화, 신고에 필요한 자료를 정리했습니다.",
       order: ["cost", "compare", "clause", "values", "roles", "data"],
     },
     risk: {
       label: "위험·신뢰 중심",
-      why: "생산에 투입하거나 공급망 탄소를 관리하는 바이어예요. 배출 근거와 검증 상태를 먼저 보여 줘요.",
-      headline: "Lower CBAM and supply risk with documented emissions data.",
-      pitch: "Purchased steel and aluminium parts are part of your Scope 3 and CBAM exposure. We document the emissions basis, state its verification status, and fix how CBAM cost is shared.",
-      headlineKo: "배출 근거 자료로 CBAM 비용과 공급 위험을 줄이세요.",
-      pitchKo: "구매하는 철강·알루미늄 부품은 귀사의 Scope 3 배출과 CBAM 부담에 들어갑니다. 배출 산정 근거와 검증 상태를 문서로 드리고, CBAM 비용 분담 방식을 정해 둡니다.",
+      why: "생산 투입 또는 공급망 탄소 관리 대상. 제안서는 배출 근거와 검증 상태부터 보여 줍니다.",
+      headline: "Emissions basis and verification status",
+      pitch: "Purchased steel and aluminium parts count towards your CBAM cost and Scope 3 emissions. This sheet sets out the emissions basis, its verification status, and how CBAM cost is shared.",
+      headlineKo: "배출 산정 근거와 검증 상태 안내",
+      pitchKo: "구매하는 철강·알루미늄 부품은 귀사의 CBAM 부담과 Scope 3 배출에 포함됩니다. 배출 산정 근거, 검증 상태, CBAM 비용 분담 방식을 정리했습니다.",
       order: ["data", "values", "cost", "clause", "roles", "compare"],
     },
     certainty: {
       label: "비용 확정 중심",
-      why: "프로젝트 기간에 비용이 바뀌면 안 되는 바이어예요. 가격 조항으로 CBAM 분담을 정해 두는 것부터 보여 줘요.",
+      why: "프로젝트 기간의 비용 변동을 피해야 하는 바이어. 제안서는 가격 조항부터 보여 줍니다.",
       // 상한은 공급사 몫에만 걸린다. 바이어 몫은 해마다 오르므로 "비용 고정"이라고 쓰지 않는다.
-      headline: "Agree how CBAM is shared for the life of your project.",
-      pitch: "CBAM rises every year to 2028. We quote it separately with a fixed share and a cap per tonne, so you know our share in advance and can budget for yours.",
-      headlineKo: "프로젝트 기간의 CBAM 분담 방식을 미리 정해 두세요.",
-      pitchKo: "CBAM은 2028년까지 해마다 오릅니다. CBAM을 단가와 따로 견적하고 분담률과 톤당 상한을 정해, 당사 분담액을 미리 알고 귀사 몫을 예산에 넣을 수 있게 합니다.",
+      headline: "Proposed terms for sharing CBAM cost",
+      pitch: "CBAM cost rises each year to 2028. We quote CBAM separately from the unit price and propose a fixed share with a cap per tonne.",
+      headlineKo: "CBAM 비용 분담 조건 제안",
+      pitchKo: "CBAM 비용은 2028년까지 해마다 오릅니다. CBAM을 단가와 따로 견적하고, 당사 분담률과 톤당 상한을 정해 제안합니다.",
       order: ["clause", "cost", "compare", "values", "roles", "data"],
     },
   };
@@ -186,22 +186,22 @@
     const sector = s.sector === "aluminium" ? L("알루미늄", "aluminium") : L("철강", "steel");
     const dv = +s.defaultValue.toFixed(3);
     const items = [
-      { level: "ok", text: L(`CBAM 대상 품목이에요 (${sector}).`, `Covered by CBAM (${sector}).`) },
-      { level: "ok", text: L(`한국산 공식 기본값 ${dv} tCO2e/톤${s.route ? ", 생산경로 " + s.route : ""}로 계산했어요.`, `Calculated with Korea's official default value ${dv} tCO2e/t${s.route ? ", production route " + s.route : ""}.`) },
+      { level: "ok", text: L(`CBAM 대상 품목 (${sector})`, `Covered by CBAM (${sector}).`) },
+      { level: "ok", text: L(`한국산 공식 기본값 ${dv} tCO2e/톤${s.route ? ", 생산경로 " + s.route : ""} 적용`, `Korea's official default value applied: ${dv} tCO2e/t${s.route ? ", production route " + s.route : ""}`) },
       state.buyerProfile && state.buyerProfile.exposure === "low"
-        ? { level: "warn", text: L("바이어의 연간 CBAM 품목 수입이 50톤 이하면 CBAM이 면제될 수 있어요. 이 경우 비용 분담 요구의 근거가 약해요.", "If the buyer imports 50 tonnes or less of CBAM goods a year, it may be exempt from CBAM. A request to share the cost then has weak grounds.") }
-        : { level: "info", text: L("바이어의 연간 CBAM 품목 수입이 50톤 이하면 면제될 수 있어요. 우리 물량만으로는 판단할 수 없어요.", "If the buyer imports 50 tonnes or less of CBAM goods a year, it may be exempt. Our volume alone cannot tell.") },
-      { level: "info", text: L("실제 배출값은 EU 인정 검증을 받아야 쓸 수 있고, 첫 검증보고서는 2027년 1월부터 가능해요. 이 도구는 기본값만 씁니다.", "Actual emissions can be used only after EU-accredited verification, and the first verification reports are possible from January 2027. This tool uses default values only.") },
+        ? { level: "warn", text: L("바이어의 연간 CBAM 품목 수입이 50톤 이하면 CBAM이 면제될 수 있습니다. 이 경우 비용 분담 요구의 근거가 약합니다.", "If the buyer imports 50 tonnes or less of CBAM goods a year, it may be exempt from CBAM. A request to share the cost then has weak grounds.") }
+        : { level: "info", text: L("바이어의 연간 CBAM 품목 수입이 50톤 이하면 면제될 수 있습니다. 바이어에게 확인이 필요합니다.", "If the buyer imports 50 tonnes or less of CBAM goods a year, it may be exempt. Confirm with the buyer.") },
+      { level: "info", text: L("실제 배출값은 EU 인정 검증 후 사용할 수 있습니다. 첫 검증보고서는 2027년 1월부터 가능합니다. 이 도구는 기본값만 사용합니다.", "Actual emissions can be used only after EU-accredited verification, and the first verification reports are possible from January 2027. This tool uses default values only.") },
       dutyFlag(s.code, K.KOREA)
-        ? { level: "warn", text: L("이 코드는 한국산에도 반덤핑 등 무역구제 조치가 걸려 있을 수 있어요. TARIC에서 확인하세요. 비교표의 한국 관세 0%가 맞지 않을 수 있어요.", "Trade defence measures such as anti-dumping may apply to Korean goods under this code. Check TARIC. The 0% duty for Korea in the comparison may not hold.") }
+        ? { level: "warn", text: L("한국산에도 반덤핑 등 무역구제 조치가 있을 수 있는 코드입니다. TARIC 확인이 필요하며, 비교표의 한국 관세 0%가 맞지 않을 수 있습니다.", "Trade defence measures such as anti-dumping may apply to Korean goods under this code. Check TARIC. The 0% duty for Korea in the comparison may not hold.") }
         : defaultDuty(s.code, K.KOREA) === 0
-          ? { level: "ok", text: L("한국산 관세 0% (EU TARIC 조회, 한-EU FTA는 원산지 요건을 채워야 적용).", "0% duty for Korean goods (EU TARIC; the EU–Korea FTA applies only if origin rules are met).") }
-          : { level: "info", text: L("이 코드의 한국산 관세율 자료가 없어요. TARIC에서 확인하세요.", "No duty rate data for Korean goods under this code. Check TARIC.") },
-      ...(DUTY[s.code] && DUTY[s.code].q ? [{ level: "warn", text: L(`철강 관세할당(쿼터)을 넘는 물량에는 추가관세 ${DUTY[s.code].q}%가 붙어요. 비교표는 쿼터 안 물량 기준이에요.`, `Volumes above the steel tariff-rate quota carry an additional ${DUTY[s.code].q}% duty. The comparison assumes in-quota volumes.`) }] : []),
-      { level: "info", text: L("바이어 신고를 도우려면 CN 코드별 물량, 원소재 밀 시트, 생산량을 준비하세요.", "To support the buyer's declaration, prepare volumes by CN code, mill certificates and production volume.") },
+          ? { level: "ok", text: L("한국산 관세 0% (EU TARIC 기준. 한-EU FTA는 원산지 요건 충족 시 적용)", "0% duty for Korean goods (EU TARIC; the EU–Korea FTA applies only if origin rules are met).") }
+          : { level: "info", text: L("이 코드의 한국산 관세율 자료 없음. TARIC 확인 필요", "No duty rate data for Korean goods under this code. Check TARIC.") },
+      ...(DUTY[s.code] && DUTY[s.code].q ? [{ level: "warn", text: L(`관세할당(쿼터) 초과 물량에는 추가관세 ${DUTY[s.code].q}% 부과. 비교표는 쿼터 내 물량 기준`, `Volumes above the steel tariff-rate quota carry an additional ${DUTY[s.code].q}% duty. The comparison assumes in-quota volumes.`) }] : []),
+      { level: "info", text: L("바이어 신고 지원 자료: CN 코드별 물량, 원소재 밀 시트, 생산량", "To support the buyer's declaration, prepare volumes by CN code, mill certificates and production volume.") },
       ((p) => p.stale
-        ? { level: "warn", text: L(`새 분기 인증서 가격이 공표됐을 거예요. 이 도구는 아직 ${p.year}년 ${p.quarter}분기 가격을 써요. 집행위 가격 페이지를 확인하세요.`, `A newer certificate price has probably been published. This tool still uses Q${p.quarter} ${p.year}. Check the Commission's price page.`) }
-        : { level: "ok", text: L(`인증서 가격은 ${p.year}년 ${p.quarter}분기 공표값으로 최신이에요 (자료 기준일 ${p.asOf}). 다음 분기 값은 분기가 끝난 다음 첫 주에 공표돼요.`, `The certificate price is the latest published one, Q${p.quarter} ${p.year} (data as of ${p.asOf}). The next quarter's price is published in the first week after the quarter ends.`) })(priceStatus(today)),
+        ? { level: "warn", text: L(`새 분기 인증서 가격이 공표됐을 수 있습니다. 현재 ${p.year}년 ${p.quarter}분기 가격 사용 중. 집행위 가격 페이지 확인 필요`, `A newer certificate price has probably been published. This tool still uses Q${p.quarter} ${p.year}. Check the Commission's price page.`) }
+        : { level: "ok", text: L(`인증서 가격: ${p.year}년 ${p.quarter}분기 공표값 (자료 기준일 ${p.asOf}). 다음 분기 값은 분기 종료 후 첫 주 공표`, `The certificate price is the latest published one, Q${p.quarter} ${p.year} (data as of ${p.asOf}). The next quarter's price is published in the first week after the quarter ends.`) })(priceStatus(today)),
     ];
     return items;
   }

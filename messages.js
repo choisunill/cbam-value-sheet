@@ -8,9 +8,9 @@
 
   // 바이어 유형(sheet.js의 세그먼트)에 따라 제안서에서 무엇을 보라고 할지가 달라진다.
   const SEG = {
-    cost: { ko: "첨부한 제안서(Buyer Value Sheet)에 톤당 총조달비용을 정리해, 추측 없이 가격을 정하실 수 있게 했습니다.", en: "The attached Buyer Value Sheet shows your total landed cost per tonne, so you can price without guessing." },
-    risk: { ko: "첨부한 제안서(Buyer Value Sheet)에 배출 산정 근거와 검증 상태를 정리해, CBAM 신고와 공급망 탄소 관리에 쓰실 수 있게 했습니다.", en: "The attached Buyer Value Sheet sets out the emissions basis and its verification status, for your CBAM declaration and supply chain carbon reporting." },
-    certainty: { ko: "첨부한 제안서(Buyer Value Sheet)에 2028년까지 연도별 CBAM 비용을 정리해, 프로젝트 예산에 반영하실 수 있게 했습니다.", en: "The attached Buyer Value Sheet shows how the CBAM cost moves each year to 2028, so you can budget for your project." },
+    cost: { ko: "첨부한 제안서(Buyer Value Sheet)에 톤당 총조달비용을 정리했습니다.", en: "The attached Buyer Value Sheet shows your total landed cost per tonne." },
+    risk: { ko: "첨부한 제안서(Buyer Value Sheet)에 배출 산정 근거와 검증 상태를 정리했습니다.", en: "The attached Buyer Value Sheet sets out the emissions basis and its verification status." },
+    certainty: { ko: "첨부한 제안서(Buyer Value Sheet)에 2028년까지 연도별 CBAM 비용을 정리했습니다.", en: "The attached Buyer Value Sheet shows the CBAM cost for each year to 2028." },
   };
 
   // s: sheet.build 결과, rival: s.comparisons 중 하나 또는 null, opt: { lang, company, buyer, clause:{on,share,cap} }
@@ -53,17 +53,17 @@
 
     if (ko) {
       lines.push(`${buyer}님께,`, "");
-      if (sit === "reprice") lines.push("가격 검토 요청에 감사드립니다. CBAM을 포함한 총비용 기준으로 당사의 생각을 말씀드립니다.");
+      if (sit === "reprice") lines.push("단가 검토 요청에 회신드립니다. CBAM을 포함한 총조달비용 기준으로 말씀드립니다.");
       else if (opt.relation === "new") lines.push("CBAM으로 공급처를 다시 검토하고 계신다면, 당사를 비교 대상에 넣어 주시기를 제안드립니다.");
-      else lines.push("그동안의 거래에 감사드립니다. CBAM 비용을 어떻게 다룰지 당사의 생각을 말씀드립니다.");
+      else lines.push("그동안의 거래에 감사드립니다. CBAM 비용 처리에 대한 당사의 제안을 드립니다.");
       lines.push(`EU 공식 기본값으로 계산하면 당사 제품(${label})의 ${year}년 수입분 CBAM 비용은 톤당 ${cost}입니다.`);
       if (rival && rival.verdict === "hold") {
-        lines.push(`CBAM을 포함해도 당사 제품의 바이어 총비용은 톤당 ${eur(rival.ourTotal)}로, ${rival.nameKo}산 대체 공급(톤당 ${eur(rival.rivalTotal)})보다 ${eur(rival.room)} 낮습니다.`);
-        lines.push("그래서 현재 단가를 유지하는 것을 제안드립니다.");
-        if (cl) lines.push(`비용을 더 확실히 정하고 싶으시면, 당사가 CBAM의 ${share}%를 부담하는 조항${capKo}도 함께 검토할 수 있습니다.`);
+        lines.push(`CBAM을 포함해도 당사 제품의 총조달비용은 톤당 ${eur(rival.ourTotal)}로, ${rival.nameKo}산 대체 공급(톤당 ${eur(rival.rivalTotal)})보다 ${eur(rival.room)} 낮습니다.`);
+        lines.push("따라서 현재 단가를 유지할 것을 제안드립니다.");
+        if (cl) lines.push(`비용을 미리 정해 두기를 원하시면 당사가 CBAM의 ${share}%를 부담하는 조항${capKo}도 검토할 수 있습니다.`);
       } else if (rival && rival.verdict === "match") {
         lines.push(`귀사의 부담을 덜기 위해 단가를 톤당 ${eur(rival.needed)}(CBAM 비용의 ${Math.round(rival.share * 100)}%) 낮추는 방안을 제안드립니다.`);
-        lines.push(`이렇게 하면 귀사의 총비용이 ${rival.nameKo}산 대체 공급과 같은 수준이 됩니다.`);
+        lines.push(`이 경우 귀사의 총조달비용이 ${rival.nameKo}산 대체 공급과 같은 수준이 됩니다.`);
         if (cl) lines.push(`또는 첨부한 제안서의 조항대로 당사가 CBAM의 ${share}%를 부담하는 방식${capKo}도 가능합니다.`);
       } else if (rival && rival.verdict === "nonprice") {
         lines.push("가격이 중요하다는 점을 잘 알고 있습니다." + (valsKo ? ` 당사는 가격 외에 다음을 드립니다: ${valsKo}.` : ""));
@@ -77,7 +77,7 @@
     }
 
     lines.push(`Dear ${buyer},`, "");
-    if (sit === "reprice") lines.push("Thank you for your request to review our price. Here is our view, based on your total cost including CBAM.");
+    if (sit === "reprice") lines.push("Thank you for your request to review our price. Our reply is based on your total landed cost including CBAM.");
     else if (opt.relation === "new") lines.push("If CBAM has led you to review your sources, we would like to be considered.");
     else lines.push("Thank you for your continued business. Here is how we propose to handle the CBAM cost.");
     lines.push(`Using official EU default values, CBAM on our product (${label}) is ${cost} per tonne for ${year} imports.`);

@@ -16,10 +16,10 @@
 <header class="topbar">
   <div class="brand">
     <img src="icons/icon-192.png" alt="" width="28" height="28">
-    <div><strong>CBAM Value Sheet</strong><span>한국 철강·알루미늄 수출기업용 바이어 제안서 도구</span></div>
+    <div><strong>CBAM Value Sheet</strong><span>한국산 철강·알루미늄 CBAM 제안서 작성</span></div>
   </div>
   <div class="top-actions">
-    <span class="privacy" title="계산은 브라우저 안에서만 합니다. 서버로 보내는 데이터가 없습니다.">입력값은 이 기기 밖으로 나가지 않아요</span>
+    <span class="privacy" title="계산은 브라우저 안에서만 합니다. 서버로 보내는 데이터가 없습니다.">입력값은 이 기기에만 저장됩니다</span>
     <div class="seg" id="ui" role="radiogroup" aria-label="화면 언어"><button type="button" role="radio" data-l="ko">한국어</button><button type="button" role="radio" data-l="en">English</button></div>
     <button type="button" id="demo" class="btn" title="가상의 회사와 바이어로 채운 시연용 예시를 불러옵니다">예시 불러오기</button>
     <button type="button" id="install" class="btn" hidden>PC에 설치</button>
@@ -46,7 +46,7 @@
       <div class="field"><span>CN 코드</span>
         <div class="code-pick"><select id="h4" aria-label="CN 코드 1~4자리"></select><select id="h6" aria-label="CN 코드 5~6자리"></select><select id="cn8" aria-label="CN 코드 7~8자리"></select></div>
       </div>
-      <details class="code-desc"><summary>품목 설명 보기</summary><div class="hint" id="codeDesc"></div></details>
+      <details class="code-desc"><summary>품목 설명</summary><div class="hint" id="codeDesc"></div></details>
       <div class="coverage" id="coverage" role="status"></div>
       <div class="regcheck"><div class="regcheck-h">규제 진단 <small>TradeGuard 연계</small></div><ul id="regCheck"></ul></div>
       <div class="field"><span>수입 연도</span>
@@ -73,11 +73,11 @@
       </label>
       <p class="hint" id="priceHint"></p>
       <div class="compare" id="compare"></div>
-      <div class="add-rival"><select id="addRival" aria-label="경쟁국 추가"></select></div>
-      <label class="check"><input type="checkbox" id="clauseOn"> 가격 조항 제안 넣기</label>
+      <div class="add-rival"><select id="addRival" aria-label="비교 원산지 추가"></select></div>
+      <label class="check"><input type="checkbox" id="clauseOn"> 가격 조항 포함</label>
       <div class="clause-inputs" id="clauseInputs">
         <label class="field"><span>우리 분담률 <output id="shareOut"></output></span><input id="share" type="range" min="0" max="100" step="5"></label>
-        <label class="field"><span>톤당 상한 (€, 비우면 없음)</span><input id="cap" type="number" min="0" step="1"></label>
+        <label class="field"><span>톤당 상한 (€, 선택)</span><input id="cap" type="number" min="0" step="1"></label>
       </div>
     </section>
 
@@ -86,20 +86,20 @@
       <div class="field" id="valueItems"></div>
       <div class="field" id="dataItems"></div>
       <details class="code-desc"><summary>증빙 파일 목록 (선택)</summary>
-        <p class="hint">파일 이름만 제안서에 적혀요. 파일은 올라가지 않아요.</p>
+        <p class="hint">파일 이름만 제안서에 표시됩니다. 파일은 전송되지 않습니다.</p>
         <input id="evidence" type="file" multiple>
         <ul id="evidenceList"></ul>
       </details>
-      <label class="check"><input type="checkbox" id="rolesOn"> 바이어 회사 안 역할별 핵심 넣기</label>
+      <label class="check"><input type="checkbox" id="rolesOn"> 담당자별 확인 사항 포함</label>
       <label class="field"><span>배출 데이터 검증 상태</span><select id="verification"></select></label>
     </section>
 
     <section class="step" id="s5">
-      <h2><span class="num">5</span>협상 메일 <small>바이어 요구에 답할 때</small></h2>
-      <p class="hint" style="margin-top:-8px">상황을 고르면 3단계의 판정과 가격 조항에 맞춰 답장 초안을 만들어요. 언어는 제안서 언어를 따라요.</p>
+      <h2><span class="num">5</span>협상 메일 <small>바이어 요청 회신</small></h2>
+      <p class="hint" style="margin-top:-8px">3단계 판정과 가격 조항을 반영한 회신 초안입니다. 언어는 제안서 언어와 같습니다.</p>
       <div>
-        <label class="field"><span>상황</span><select id="mailSituation"></select></label>
-        <label class="field"><span>비교 기준</span><select id="mailRival"></select></label>
+        <label class="field"><span>요청 유형</span><select id="mailSituation"></select></label>
+        <label class="field"><span>비교 원산지</span><select id="mailRival"></select></label>
         <input id="mailSubject" type="text" readonly aria-label="메일 제목">
         <textarea id="mailBody" rows="10" readonly aria-label="메일 본문"></textarea>
         <button type="button" class="btn" id="mailCopy">메일 복사</button> <span class="hint" id="mailCopied" role="status"></span>
@@ -108,11 +108,11 @@
     </section>
 
     <section class="step" id="s6">
-      <h2><span class="num">6</span>점검·저장 <small>보내기 전에 확인해요</small></h2>
+      <h2><span class="num">6</span>점검·저장 <small>발송 전 확인</small></h2>
       <div class="segment" id="summary"></div>
-      <div class="regcheck"><div class="regcheck-h">보내기 전 점검</div><ul id="preCheck"></ul></div>
-      <button type="button" class="btn primary wide" id="print">제안서 PDF로 저장</button>
-      <p class="hint">인쇄 창에서 "PDF로 저장"을 고르세요.</p>
+      <div class="regcheck"><div class="regcheck-h">점검 항목</div><ul id="preCheck"></ul></div>
+      <button type="button" class="btn primary wide" id="print">제안서 PDF 저장</button>
+      <p class="hint">인쇄 창에서 "PDF로 저장" 선택</p>
       <button type="button" class="btn" id="mailCopy2">메일 복사</button> <span class="hint" id="mailCopied2" role="status"></span>
     </section>
 
@@ -126,10 +126,10 @@
 
   <div class="preview">
     <section class="chartpane" aria-label="가격 비교 그래프">
-      <h2>원산지별 바이어 총비용 <small>단가 + 관세 + CBAM</small></h2>
+      <h2>원산지별 총조달비용 <small>단가 + 관세 + CBAM</small></h2>
       <div id="chart"></div>
     </section>
-    <div class="preview-label"><span>바이어에게 보낼 제안서 미리보기</span>
+    <div class="preview-label"><span>제안서 미리보기</span>
       <div class="seg" id="lang" role="radiogroup" aria-label="제안서 언어">
         <button type="button" role="radio" data-l="ko">한국어</button><button type="button" role="radio" data-l="en">English</button>
       </div></div>

@@ -139,7 +139,7 @@ test("협상 메일: 바이어 유형에 따라 제안서에서 볼 것을 다�
   const mail = (profile) => { const s = S.build({ ...base, buyerProfile: profile }); return M.email(s, null, { lang: "en", clause: base.clause }).body; };
   assert.match(mail({ purpose: "resale" }), /total landed cost per tonne/);
   assert.match(mail({ esg: true }), /verification status/);
-  assert.match(mail({ purpose: "project" }), /budget for your project/);
+  assert.match(mail({ purpose: "project" }), /each year to 2028/);
 });
 
 test("협상 메일: 상황 3종과 제품명", () => {
