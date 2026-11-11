@@ -42,7 +42,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .menu a.active { color: var(--ink); font-weight: 600; border-left-color: var(--ink); }
 .sider-note { font-size: 11px; color: var(--ink-3); margin: 0; padding-right: 12px; line-height: 1.5; }
 
-.layout { display: grid; grid-template-columns: 392px minmax(0, 1fr); gap: 32px; padding: 28px 24px 28px 8px; align-items: start; }
+.layout { display: grid; grid-template-columns: clamp(392px, 32vw, 560px) minmax(0, 1fr); gap: 32px; padding: 28px 24px 28px 8px; align-items: start; }
 .panel { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 
 /* 단계: 카드 대신 한 면 안에서 선으로 나눈다 */
