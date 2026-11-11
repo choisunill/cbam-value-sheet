@@ -17,7 +17,7 @@
     "계산은 브라우저 안에서만 합니다. 서버로 보내는 데이터가 없습니다.": "All calculation happens in your browser. Nothing is sent to a server.",
     "예시 불러오기": "Load example", "가상의 회사와 바이어로 채운 시연용 예시를 불러옵니다": "Loads a demo example with a fictional company and buyer",
     "PC에 설치": "Install app",
-    "제품 진단": "Product check", "바이어 진단": "Buyer profile", "가격 비교": "Price comparison", "제안서": "Value sheet", "협상 메일": "Negotiation email",
+    "제품 진단": "Product check", "바이어 진단": "Buyer profile", "가격 비교": "Price comparison", "제안서": "Value sheet", "협상 메일": "Reply email",
     "공식 기본값 기준 · 2026년 3분기 인증서 가격 €82.32": "Official default values · Q3 2026 certificate price €82.32",
     "CN 코드": "CN code", "품목 설명 보기": "Show product description", "규제 진단": "Regulatory check", "TradeGuard 연계": "linked to TradeGuard",
     "수입 연도": "Import year", "연간 수출량 (톤)": "Annual export volume (tonnes)",
@@ -37,9 +37,10 @@
     "바이어에게 보낼 제안서 미리보기": "Preview of the sheet for the buyer",
     "단계": "Steps", "CN 코드 1~4자리": "CN code digits 1–4", "CN 코드 5~6자리": "CN code digits 5–6", "CN 코드 7~8자리": "CN code digits 7–8",
     "경쟁국 추가": "Add a competing origin", "메일 제목": "Email subject", "메일 본문": "Email body", "가격 비교 그래프": "Price comparison chart",
-    "보내기 전 점검": "Pre-send check",
+    "보내기 전 점검": "Pre-send check", "점검·저장": "Check & save", "보내기 전에 확인해요": "review before sending",
+    "점검으로 돌아가기": "Back to check", "증빙 파일 목록 (선택)": "Supporting documents (optional)",
+    "파일 이름만 제안서에 적혀요. 파일은 올라가지 않아요.": "Only file names are listed on the sheet. Nothing is uploaded.", "다른 언어 확인본": "Copy in the other language",
     "제품명·규격 (선택)": "Product name and spec (optional)", "예: 육각볼트 M12×50, 강도 10.9": "e.g. Hex bolt M12×50, property class 10.9",
-    "증빙 파일 목록 (파일 이름만 적혀요. 파일은 올라가지 않아요)": "Supporting documents (only file names are listed; nothing is uploaded)",
     "상황": "Situation",
     "제안서 언어": "Sheet language", "화면 언어": "Screen language",
     // sheet.js와 catalog.js의 한국어 문구
@@ -196,11 +197,19 @@
   $("rolesOn").addEventListener("change", (e) => { state.roles = e.target.checked; render(false); });
   $("valueItems").addEventListener("change", (e) => { if (e.target.dataset.k) { state.values[e.target.dataset.k] = e.target.checked; render(false); } });
   $("mailRival").addEventListener("change", (e) => { state.mailRival = e.target.value; renderMail(lastSheet); });
-  $("mailCopy").addEventListener("click", async () => {
+  [["mailCopy", "mailCopied"], ["mailCopy2", "mailCopied2"]].forEach(([btn, note]) => $(btn).addEventListener("click", async () => {
     const text = $("mailSubject").value + "\n\n" + $("mailBody").value;
-    try { await navigator.clipboard.writeText(text); $("mailCopied").textContent = T("복사했어요", "Copied"); }
-    catch { $("mailBody").select(); $("mailCopied").textContent = T("Ctrl+C로 복사하세요", "Press Ctrl+C to copy"); }
+    try { await navigator.clipboard.writeText(text); $(note).textContent = T("복사했어요", "Copied"); }
+    catch { $(note).textContent = T("5단계에서 본문을 직접 복사하세요", "Copy the body manually in step 5"); }
+  }));
+  // 점검 줄의 "고치러 가기": 해당 단계로 갔다가 돌아올 수 있게 버튼을 보여 준다.
+  const goTab = (id) => document.querySelector(`#tabs a[href="#${id}"]`).click();
+  $("preCheck").addEventListener("click", (e) => {
+    const a = e.target.closest("[data-go]");
+    if (!a) return;
+    e.preventDefault(); goTab(a.dataset.go); $("backToCheck").hidden = false; window.scrollTo({ top: 0 });
   });
+  $("backToCheck").addEventListener("click", () => { goTab("s6"); window.scrollTo({ top: 0 }); });
   [["qty", "qty"], ["ourPrice", "ourPrice"]].forEach(([id, k]) => $(id).addEventListener("input", (e) => { state[k] = num(e.target.value); render(); }));
   [["company", "company"], ["buyer", "buyer"]].forEach(([id, k]) => $(id).addEventListener("input", (e) => { state[k] = e.target.value; render(); }));
   $("product").addEventListener("input", (e) => { state.product = e.target.value; render(false); });
@@ -483,29 +492,29 @@
     const out = [];
     out.push(state.company.trim() && state.buyer.trim()
       ? ["ok", T("회사명과 바이어명이 들어갔어요.", "Company and buyer names are filled in.")]
-      : ["warn", T("회사명이나 바이어명이 비어 있어요. 제안서에 \"우리 회사 / 바이어\"로 인쇄돼요.", "Company or buyer name is blank. The sheet will print \"Your company / Buyer\".")]);
+      : ["warn", T("회사명이나 바이어명이 비어 있어요. 제안서에 \"우리 회사 / 바이어\"로 인쇄돼요.", "Company or buyer name is blank. The sheet will print \"Your company / Buyer\"."), "s2"]);
     const vLabel = tr((S.VERIFICATION[state.verification] || S.VERIFICATION.none).ko);
-    if (state.verification === "accredited") out.push(["warn", T("검증 상태를 \"EU 인정 검증\"으로 적어요. 검증보고서가 있을 때만 고르세요.", "Verification is stated as EU-accredited. Choose this only if you hold the verification report.")]);
-    else if (!state.verification || state.verification === "none") out.push(["info", T("배출 데이터 검증이 아직 없다고 적혀요. 기본값이 적용된다고 나가요.", "The sheet says emissions data is not yet verified and default values apply.")]);
+    if (state.verification === "accredited") out.push(["warn", T("검증 상태를 \"EU 인정 검증\"으로 적어요. 검증보고서가 있을 때만 고르세요.", "Verification is stated as EU-accredited. Choose this only if you hold the verification report."), "s4"]);
+    else if (!state.verification || state.verification === "none") out.push(["info", T("배출 데이터 검증이 아직 없다고 적혀요. 기본값이 적용된다고 나가요.", "The sheet says emissions data is not yet verified and default values apply."), "s4"]);
     else out.push(["ok", T(`검증 상태를 적었어요: ${vLabel}.`, `Verification status is stated: ${vLabel}.`)]);
     const isAvg = (origin, price) => price === S.marketPrice(s.code, origin);
     const prices = [[K.KOREA, state.ourPrice], ...s.buyerComparisons.map((c) => [c.origin, c.price])];
     const nAvg = prices.filter(([o, p]) => isAvg(o, p)).length;
-    if (!s.buyerComparisons.length) out.push(["info", T("제안서에 넣은 비교 원산지가 없어요. 비교표 없이 나가요.", "No origin is selected for the sheet. It goes out without a comparison table.")]);
-    else if (nAvg === prices.length) out.push(["warn", T("비교표 단가가 모두 시장 평균이에요. 실제 견적가가 아니에요. 제안서에 출처가 적혀요.", "Every unit price in the comparison is a market average, not a real quote. The sheet states the source.")]);
-    else if (nAvg > 0) out.push(["info", T(`시장 평균 단가 ${nAvg}개가 섞여 있어요. 제안서에 * 로 표시돼요.`, `${nAvg} unit price(s) are market averages. They are marked * on the sheet.`)]);
+    if (!s.buyerComparisons.length) out.push(["info", T("제안서에 넣은 비교 원산지가 없어요. 비교표 없이 나가요.", "No origin is selected for the sheet. It goes out without a comparison table."), "s3"]);
+    else if (nAvg === prices.length) out.push(["warn", T("비교표 단가가 모두 시장 평균이에요. 실제 견적가가 아니에요. 제안서에 출처가 적혀요.", "Every unit price in the comparison is a market average, not a real quote. The sheet states the source."), "s3"]);
+    else if (nAvg > 0) out.push(["info", T(`시장 평균 단가 ${nAvg}개가 섞여 있어요. 제안서에 * 로 표시돼요.`, `${nAvg} unit price(s) are market averages. They are marked * on the sheet.`), "s3"]);
     else out.push(["ok", T("비교표 단가를 모두 직접 입력했어요.", "All unit prices in the comparison were entered by you.")]);
     const excluded = s.rivals.filter((r) => !r.verdict).map(nm);
-    if (s.koreaDutyUnknown) out.push(["warn", T("한국산 관세율을 TARIC에서 확인해야 해서 총비용을 비교하지 않았어요.", "Total cost is not compared: the duty rate on Korean goods must be checked in TARIC.")]);
-    else if (excluded.length) out.push(["info", T(`판정에서 빠진 나라: ${excluded.join(", ")} (단가나 관세율이 없거나 단가가 우리의 2배 초과).`, `Left out of the verdict: ${excluded.join(", ")} (no unit price or duty rate, or unit price over twice ours).`)]);
+    if (s.koreaDutyUnknown) out.push(["warn", T("한국산 관세율을 TARIC에서 확인해야 해서 총비용을 비교하지 않았어요.", "Total cost is not compared: the duty rate on Korean goods must be checked in TARIC."), "s3"]);
+    else if (excluded.length) out.push(["info", T(`판정에서 빠진 나라: ${excluded.join(", ")} (단가나 관세율이 없거나 단가가 우리의 2배 초과).`, `Left out of the verdict: ${excluded.join(", ")} (no unit price or duty rate, or unit price over twice ours).`), "s3"]);
     else out.push(["ok", T("고른 경쟁국을 모두 판정했어요.", "Every selected origin has a verdict.")]);
     const c = state.clause;
     out.push(["info", c.on
       ? T(`가격 조항이 들어가요 (당사 분담 ${Math.round(c.share * 100)}%${c.cap != null ? `, 톤당 상한 ${eur(c.cap)}` : ""}). 비교표 총비용은 조항 반영 전이라고 적혀요.`, `A price clause is included (our share ${Math.round(c.share * 100)}%${c.cap != null ? `, cap ${eur(c.cap)} per tonne` : ""}). The comparison totals are labelled as before the clause.`)
-      : T("가격 조항 없이 나가요.", "It goes out without a price clause.")]);
+      : T("가격 조항 없이 나가요.", "It goes out without a price clause."), "s3"]);
     out.push(s.values.length
       ? ["ok", T(`가격 외 가치 ${s.values.length}개를 넣었어요. 사실인 것만 골랐는지 확인하세요.`, `${s.values.length} non-price value(s) are included. Make sure each one is true.`)]
-      : ["info", T("가격 외 가치를 고르지 않았어요. 제안서에서 그 항목이 빠져요.", "No non-price value is selected. That section is left out of the sheet.")]);
+      : ["info", T("가격 외 가치를 고르지 않았어요. 제안서에서 그 항목이 빠져요.", "No non-price value is selected. That section is left out of the sheet."), "s4"]);
     return out;
   }
 
@@ -528,7 +537,7 @@
     if (s.ok) $("segment").innerHTML = `<strong>${esc(tr(s.type.label))}</strong>${esc(tr(s.type.why))}${segmentEffects(s)}<small style="display:block;margin-top:4px;color:var(--ink-3)">${T("예시 분류예요. 바이어를 직접 조사한 결과가 아니라 구매 이론을 적용한 가정이에요.", "Illustrative grouping: an assumption from buying theory, not a survey of buyers.")}</small>`;
     $("regCheck").innerHTML = S.regCheck(s, state, isEn()).map((i) => `<li class="${i.level}">${esc(tr(i.text))}</li>`).join("");
     $("summary").innerHTML = summaryHTML(s);
-    $("preCheck").innerHTML = preCheck(s).map(([level, text]) => `<li class="${level}">${esc(text)}</li>`).join("");
+    $("preCheck").innerHTML = preCheck(s).map(([level, text, go]) => `<li class="${level}"><span>${esc(text)}${go && level !== "ok" ? ` <a href="#${go}" class="fix" data-go="${go}">${T("고치러 가기", "Fix")}</a>` : ""}</span></li>`).join("");
     lastSheet = s;
     renderMail(s);
     renderChart(s);
@@ -572,6 +581,7 @@
     links.forEach((a, k) => { a.classList.toggle("active", k === cur); a.setAttribute("aria-current", k === cur ? "step" : "false"); });
     document.getElementById("prevStep").disabled = cur === 0;
     document.getElementById("nextStep").hidden = cur === ids.length - 1;
+    if (cur === ids.length - 1) document.getElementById("backToCheck").hidden = true;
     document.body.dataset.tab = ids[cur]; // 가격 비교 단계에서는 오른쪽에 제안서 대신 그래프를 보여 준다
     try { sessionStorage.setItem("cbam-tab", ids[cur]); } catch { /* 무시 */ }
   }

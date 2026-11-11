@@ -34,6 +34,7 @@
     <a href="#s3"><span class="num">3</span>가격 비교</a>
     <a href="#s4"><span class="num">4</span>제안서</a>
     <a href="#s5"><span class="num">5</span>협상 메일</a>
+    <a href="#s6"><span class="num">6</span>점검·저장</a>
   </nav>
   <p class="sider-note">공식 기본값 기준 · 2026년 3분기 인증서 가격 €82.32</p>
 </aside>
@@ -84,16 +85,13 @@
       <h2><span class="num">4</span>제안서</h2>
       <div class="field" id="valueItems"></div>
       <div class="field" id="dataItems"></div>
-      <div class="field"><span>증빙 파일 목록 (파일 이름만 적혀요. 파일은 올라가지 않아요)</span>
+      <details class="code-desc"><summary>증빙 파일 목록 (선택)</summary>
+        <p class="hint">파일 이름만 제안서에 적혀요. 파일은 올라가지 않아요.</p>
         <input id="evidence" type="file" multiple>
         <ul id="evidenceList"></ul>
-      </div>
+      </details>
       <label class="check"><input type="checkbox" id="rolesOn"> 바이어 회사 안 역할별 핵심 넣기</label>
       <label class="field"><span>배출 데이터 검증 상태</span><select id="verification"></select></label>
-      <div class="segment" id="summary"></div>
-      <div class="regcheck"><div class="regcheck-h">보내기 전 점검</div><ul id="preCheck"></ul></div>
-      <button type="button" class="btn primary wide" id="print">제안서 PDF로 저장</button>
-      <p class="hint">인쇄 창에서 "PDF로 저장"을 고르세요.</p>
     </section>
 
     <section class="step" id="s5">
@@ -105,11 +103,20 @@
         <input id="mailSubject" type="text" readonly aria-label="메일 제목">
         <textarea id="mailBody" rows="10" readonly aria-label="메일 본문"></textarea>
         <button type="button" class="btn" id="mailCopy">메일 복사</button> <span class="hint" id="mailCopied" role="status"></span>
-        <label class="field" style="margin-top:14px"><span id="mailCheckLabel"></span><textarea id="mailCheck" rows="10" readonly></textarea></label>
+        <details class="code-desc" style="margin-top:14px"><summary id="mailCheckLabel"></summary><textarea id="mailCheck" rows="10" readonly aria-label="다른 언어 확인본"></textarea></details>
       </div>
     </section>
 
-    <div class="stepnav"><button type="button" class="btn" id="prevStep">이전</button><button type="button" class="btn primary" id="nextStep">다음</button></div>
+    <section class="step" id="s6">
+      <h2><span class="num">6</span>점검·저장 <small>보내기 전에 확인해요</small></h2>
+      <div class="segment" id="summary"></div>
+      <div class="regcheck"><div class="regcheck-h">보내기 전 점검</div><ul id="preCheck"></ul></div>
+      <button type="button" class="btn primary wide" id="print">제안서 PDF로 저장</button>
+      <p class="hint">인쇄 창에서 "PDF로 저장"을 고르세요.</p>
+      <button type="button" class="btn" id="mailCopy2">메일 복사</button> <span class="hint" id="mailCopied2" role="status"></span>
+    </section>
+
+    <div class="stepnav"><button type="button" class="btn" id="prevStep">이전</button><button type="button" class="btn" id="backToCheck" hidden>점검으로 돌아가기</button><button type="button" class="btn primary" id="nextStep">다음</button></div>
 
     <footer class="method">
       <p>기본값 경로: 인증서 수 = 기본값 × (1 + 할증) − 벤치마크 × CBAM 계수. 근거 IR 2026/1740, IR 2025/2620, Directive 2003/87, 인증서 가격은 집행위 공표값(2026년 3분기 €82.32). 기본값(2026-08-06판)과 벤치마크(2026-02-06판)는 EU 집행위 공개 Excel에서 가져왔습니다.</p>

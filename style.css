@@ -266,6 +266,12 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 .code-desc summary:hover { color: var(--ink); }
 .code-desc[open] summary { margin-bottom: 8px; }
 .code-desc .hint { margin: 0; }
+.code-desc #evidence { margin-top: 6px; }
+/* 보내기 전 점검: 할 일이 남은 줄이 눈에 띄게, 통과한 줄은 흐리게 */
+#preCheck li.ok { color: var(--ink-3); }
+#preCheck li.warn { font-weight: 600; }
+#preCheck .fix { margin-left: 6px; font-weight: 400; color: var(--ink); white-space: nowrap; }
+#mailCopy2 { margin-top: 12px; }
 
 /* 점검에서 찾은 문제 수정 */
 /* 5단계 메일 본문이 한 줄 높이로 줄어들던 문제 */
