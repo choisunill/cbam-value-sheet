@@ -38,12 +38,22 @@
   };
 
   const QUESTIONS = {
-    industry: { ko: "업종", options: { distributor: "유통·수입상", manufacturer: "자동차·기계 부품 제조", construction: "건설·프로젝트" } },
-    purpose: { ko: "구매 목적", options: { resale: "재판매", production: "생산에 투입", project: "프로젝트 납품" } },
+    industry: { ko: "업종", options: { "": "선택 안 함", distributor: "유통·수입상", manufacturer: "자동차·기계 부품 제조", construction: "건설·프로젝트" } },
+    purpose: { ko: "구매 목적", options: { "": "선택 안 함", resale: "재판매", production: "생산에 투입", project: "프로젝트 납품" } },
     exposure: { ko: "바이어의 연간 CBAM 품목 수입량", options: { high: "50톤 초과", low: "50톤 이하 가능", unknown: "미확인" } },
   };
 
+  // order: 제안서 항목 순서. brief: 한 줄로 줄여 보여 주는 항목(그 유형의 주된 제안이 아닌 것).
   const SEGMENTS = {
+    common: {
+      label: "공통",
+      why: "업종과 구매 목적을 고르지 않았습니다. 제안서는 비용, 원산지 비교, 가격 조항, 제공 자료를 같은 비중으로 보여 줍니다.",
+      headline: "CBAM cost and our proposal",
+      pitch: "As the EU importer, you pay CBAM. This sheet gives the cost per tonne to 2028 and what we propose.",
+      headlineKo: "CBAM 비용과 당사 제안 안내",
+      pitchKo: "CBAM은 EU 수입자인 귀사가 납부합니다. 2028년까지의 톤당 비용과 당사의 제안을 정리했습니다.",
+      order: ["cost", "compare", "clause", "data", "values", "roles"], brief: [],
+    },
     cost: {
       label: "비용 중심",
       why: "재판매 목적. 단가와 총조달비용을 먼저 봅니다. 제안서는 비용, 원산지 비교 순입니다.",
@@ -51,30 +61,37 @@
       pitch: "As the EU importer, you pay CBAM. This sheet gives the cost per tonne, how it changes to 2028, and the data your declaration needs.",
       headlineKo: "톤당 CBAM 비용과 총조달비용 안내",
       pitchKo: "CBAM은 EU 수입자인 귀사가 납부합니다. 톤당 비용, 2028년까지의 변화, 신고에 필요한 자료를 정리했습니다.",
-      order: ["cost", "compare", "clause", "values", "roles", "data"],
+      order: ["cost", "compare", "clause", "data", "values", "roles"], brief: ["clause", "data"],
     },
     risk: {
       label: "위험·신뢰 중심",
       why: "생산 투입 또는 공급망 탄소 관리 대상. 제안서는 배출 근거와 검증 상태부터 보여 줍니다.",
       headline: "Emissions basis and verification status",
-      pitch: "Purchased steel and aluminium parts count towards your CBAM cost and Scope 3 emissions. This sheet sets out the emissions basis, its verification status, and how CBAM cost is shared.",
+      pitch: "Purchased steel and aluminium parts count towards your CBAM cost and Scope 3 emissions. This sheet sets out the emissions basis and its verification status.",
+      clausePitch: "It also shows how CBAM cost is shared.",
       headlineKo: "배출 산정 근거와 검증 상태 안내",
-      pitchKo: "구매하는 철강·알루미늄 부품은 귀사의 CBAM 부담과 Scope 3 배출에 포함됩니다. 배출 산정 근거, 검증 상태, CBAM 비용 분담 방식을 정리했습니다.",
-      order: ["data", "values", "cost", "clause", "roles", "compare"],
+      pitchKo: "구매하는 철강·알루미늄 부품은 귀사의 CBAM 부담과 Scope 3 배출에 포함됩니다. 배출 산정 근거와 검증 상태를 정리했습니다.",
+      clausePitchKo: "CBAM 비용 분담 방식도 함께 정리했습니다.",
+      order: ["data", "cost", "compare", "clause", "values", "roles"], brief: ["compare", "clause"],
     },
     certainty: {
       label: "비용 확정 중심",
       why: "프로젝트 기간의 비용 변동을 피해야 하는 바이어. 제안서는 가격 조항부터 보여 줍니다.",
       // 상한은 공급사 몫에만 걸린다. 바이어 몫은 해마다 오르므로 "비용 고정"이라고 쓰지 않는다.
       headline: "Proposed terms for sharing CBAM cost",
-      pitch: "CBAM cost rises each year to 2028. We quote CBAM separately from the unit price and propose a fixed share with a cap per tonne.",
+      pitch: "CBAM cost rises each year to 2028. We quote CBAM separately from the unit price.",
+      clausePitch: "We propose to bear a fixed share of it on the terms below.",
       headlineKo: "CBAM 비용 분담 조건 제안",
-      pitchKo: "CBAM 비용은 2028년까지 해마다 오릅니다. CBAM을 단가와 따로 견적하고, 당사 분담률과 톤당 상한을 정해 제안합니다.",
-      order: ["clause", "cost", "compare", "values", "roles", "data"],
+      pitchKo: "CBAM 비용은 2028년까지 해마다 오릅니다. CBAM은 단가와 따로 견적합니다.",
+      clausePitchKo: "당사가 그중 일정 비율을 부담하는 조건을 아래에 제안합니다.",
+      // 조항을 끄면 분담 제안이 없으므로 제목도 바꾼다
+      noClause: { headline: "CBAM cost outlook to 2028", headlineKo: "2028년까지의 CBAM 비용 안내" },
+      order: ["clause", "cost", "compare", "data", "values", "roles"], brief: ["compare", "data"],
     },
   };
 
   function segmentFor(b = {}) {
+    if (!b.industry && !b.purpose && !b.esg) return "common"; // 아무것도 고르지 않으면 어느 한 제안으로 기울지 않는다
     if (b.purpose === "project" || b.industry === "construction") return "certainty";
     if (b.esg || (b.purpose === "production" && b.industry === "manufacturer")) return "risk";
     return "cost";
@@ -139,6 +156,15 @@
       ? years.map((c) => ({ year: c.year, ...N.clauseSplit({ certificates: c.certificates, price: c.cost / c.certificates || 0, share: state.clause.share, cap: state.clause.cap }) }))
       : null;
 
+    // 바이어 유형이 제안서 내용을 가른다: 비교표를 넣는지, 맨 위에 어떤 숫자를 두는지.
+    const seg = SEGMENTS[segmentFor(state.buyerProfile)];
+    // 소개 문장은 조항이 있을 때만 분담을 말한다
+    const type = clause
+      ? { ...seg, pitch: [seg.pitch, seg.clausePitch].filter(Boolean).join(" "), pitchKo: [seg.pitchKo, seg.clausePitchKo].filter(Boolean).join(" ") }
+      : { ...seg, ...seg.noClause };
+    const buyerComparisons = rivals.filter((r) => r.verdict && r.include);
+    const perYear = qty || 1; // 물량이 없으면 톤당 값
+
     return {
       ok: true,
       code: state.code,
@@ -155,10 +181,13 @@
       rivals,
       koreaDutyUnknown,
       comparisons: rivals.filter((r) => r.verdict),
-      buyerComparisons: rivals.filter((r) => r.verdict && r.include),
+      buyerComparisons,
+      emissions: qty ? now.defaultValue * qty : null, // 기본값 기준 연간 배출량(tCO2e)
+      cumulative: years.reduce((a, y) => a + y.cost, 0) * perYear, // 2026~2028 합계, 같은 인증서 가격·같은 물량 가정
+      cumulativeBuyer: clause ? clause.reduce((a, c) => a + c.buyer, 0) * perYear : null,
       clause,
       segment: segmentFor(state.buyerProfile),
-      type: SEGMENTS[segmentFor(state.buyerProfile)],
+      type,
       lowExposure: !!(state.buyerProfile && state.buyerProfile.exposure === "low"),
       roles: state.roles !== false,
       relation: relationOf(state),
@@ -167,7 +196,7 @@
       verification: VERIFICATION[state.verification] || VERIFICATION.none,
       dataProvided: Object.keys(DATA_ITEMS).filter((k) => state.dataItems && state.dataItems[k]).map((k) => DATA_ITEMS[k]),
       // 제안서에 넣은 단가가 모두 시장 평균 그대로일 때만 출처를 적는다
-      marketPricesApply: state.ourPrice === marketPrice(state.code, K.KOREA) && rivals.filter((r) => r.verdict && r.include).every((r) => r.price === marketPrice(state.code, r.origin)),
+      marketPricesApply: state.ourPrice === marketPrice(state.code, K.KOREA) && buyerComparisons.every((r) => r.price === marketPrice(state.code, r.origin)),
     };
   }
 

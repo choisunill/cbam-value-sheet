@@ -8,6 +8,7 @@
 
   // 바이어 유형(sheet.js의 세그먼트)에 따라 제안서에서 무엇을 보라고 할지가 달라진다.
   const SEG = {
+    common: { ko: "첨부한 제안서(Buyer Value Sheet)에 톤당 CBAM 비용과 당사의 제안을 정리했습니다.", en: "The attached Buyer Value Sheet sets out the CBAM cost per tonne and our proposal." },
     cost: { ko: "첨부한 제안서(Buyer Value Sheet)에 톤당 총조달비용을 정리했습니다.", en: "The attached Buyer Value Sheet shows your total landed cost per tonne." },
     risk: { ko: "첨부한 제안서(Buyer Value Sheet)에 배출 산정 근거와 검증 상태를 정리했습니다.", en: "The attached Buyer Value Sheet sets out the emissions basis and its verification status." },
     certainty: { ko: "첨부한 제안서(Buyer Value Sheet)에 2028년까지 연도별 CBAM 비용을 정리했습니다.", en: "The attached Buyer Value Sheet shows the CBAM cost for each year to 2028." },

@@ -60,6 +60,35 @@ test("CBAM 대상이 아닌 코드는 이유를 돌려준다", () => {
   assert.ok(s.reason);
 });
 
+test("유형별 제안서 내용: 주된 제안이 아닌 항목은 한 줄로 줄이고, 유형별 숫자는 검산값과 같다", () => {
+  const cost = S.build(base);
+  const risk = S.build({ ...base, buyerProfile: { industry: "manufacturer", purpose: "production" } });
+  const cert = S.build({ ...base, buyerProfile: { purpose: "project" } });
+  for (const s of [cost, risk, cert]) {
+    assert.strictEqual(s.buyerComparisons.length, 1); // 비교는 모든 유형에 남는다(표 또는 한 줄)
+    assert.ok(!s.type.brief.includes(s.type.order[0])); // 첫 항목은 줄이지 않는다
+  }
+  assert.deepStrictEqual(cost.type.brief, ["clause", "data"]);
+  assert.deepStrictEqual(risk.type.brief, ["compare", "clause"]);
+  assert.deepStrictEqual(cert.type.brief, ["compare", "data"]);
+  const common = S.build({ ...base, buyerProfile: { industry: "", purpose: "" } });
+  assert.strictEqual(common.segment, "common"); // 아무것도 고르지 않으면 공통형
+  assert.deepStrictEqual(common.type.brief, []);
+  assert.ok(Math.abs(risk.emissions - 347.4) < 0.01); // 3.474 × 100톤
+  assert.ok(Math.abs(cert.cumulative - 71233) < 1); // (205.10 + 236.51 + 270.72) × 100톤
+  assert.ok(Math.abs(cert.cumulativeBuyer - (cert.cumulative - (102.55 + 118.25 + 120) * 100)) < 1); // 공급사 몫 50%, 2028년은 상한 120
+  assert.ok(Math.abs(S.build({ ...base, qty: NaN }).cumulative - 712.33) < 0.01); // 물량이 없으면 톤당
+});
+
+test("가격 조항을 끄면 소개 문장과 제목이 분담을 말하지 않는다", () => {
+  const profile = { buyerProfile: { purpose: "project" } };
+  const on = S.build({ ...base, ...profile }).type, off = S.build({ ...base, ...profile, clause: { on: false, share: 0.5, cap: 120 } }).type;
+  assert.match(on.pitchKo, /부담하는 조건/);
+  assert.doesNotMatch(off.pitchKo, /부담|분담|상한/);
+  assert.doesNotMatch(off.headlineKo, /분담/);
+  assert.doesNotMatch(off.pitch + off.headline, /shar/i);
+});
+
 test("바이어 진단: 재판매 유통사는 비용, 생산 투입 제조사는 위험, 프로젝트는 비용 확정", () => {
   assert.strictEqual(S.segmentFor({ industry: "distributor", purpose: "resale" }), "cost");
   assert.strictEqual(S.segmentFor({ industry: "manufacturer", purpose: "production" }), "risk");
