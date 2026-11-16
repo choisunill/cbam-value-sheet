@@ -292,3 +292,17 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 }
 /* 좁은 화면의 가격 비교 단계에서는 그래프를 입력칸 위에 둔다 */
 @media (max-width: 1000px) { body[data-tab="s3"] .preview { order: -1; } }
+
+/* 시연 안내 (tour.js): 화면을 막지 않아 안내 중에도 값을 바꿀 수 있다 */
+.tour { position: fixed; inset: 0; z-index: 1000; pointer-events: none; }
+.tour[hidden] { display: none; }
+.tour svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.tour-hl { position: absolute; border: 4px solid #ff5a1f; border-radius: 10px; box-shadow: 0 0 0 6px rgba(255, 90, 31, .18); }
+.tour-card { position: absolute; width: 380px; pointer-events: auto; background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 20px 22px 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, .22); }
+.tour-head { display: flex; align-items: center; gap: 14px; }
+.tour-n { flex: none; width: 52px; height: 52px; border-radius: 50%; background: #ff5a1f; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; }
+.tour-t { font-size: 20px; line-height: 1.35; }
+.tour-x { margin: 14px 0 16px; font-size: 15px; line-height: 1.6; color: var(--ink-2); }
+.tour-nav { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tour-c { font-size: 13px; color: var(--ink-3); }
+.tour-nav .btn:disabled { visibility: hidden; }
