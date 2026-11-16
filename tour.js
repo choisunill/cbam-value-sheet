@@ -20,35 +20,28 @@
   function draw() {
     if (i < 0) return;
     const s = STEPS[i];
-    const els = s.targets.map(boxOf).filter(Boolean);
-    const W = innerWidth, H = innerHeight, gap = 90;
-    const rects = els.map((el) => el.getBoundingClientRect());
-    layer.querySelectorAll(".tour-hl").forEach((n) => n.remove());
-    rects.forEach((r) => {
-      const hl = document.createElement("div");
-      hl.className = "tour-hl";
-      Object.assign(hl.style, { left: r.left - 6 + "px", top: r.top - 6 + "px", width: r.width + 12 + "px", height: r.height + 12 + "px" });
-      layer.prepend(hl);
-    });
-    // 카드는 첫 대상의 오른쪽, 자리가 없으면 왼쪽, 그것도 없으면 화면 아래 가운데
-    const card = layer.querySelector(".tour-card"), cw = card.offsetWidth, ch = card.offsetHeight, r0 = rects[0];
-    let x, y;
-    if (r0 && r0.right + gap + cw < W - 16) x = r0.right + gap;
-    else if (r0 && r0.left - gap - cw > 16) x = r0.left - gap - cw;
-    else x = (W - cw) / 2;
-    y = r0 ? Math.min(Math.max(16, r0.top + Math.min(r0.height, H) / 2 - ch / 2), H - ch - 16) : (H - ch) / 2;
-    if (r0 && x === (W - cw) / 2) y = H - ch - 16;
-    // 오른쪽 제안서가 바뀌는 걸 봐야 하는 단계는 카드를 대상 아래에 둔다
-    if (r0 && s.place === "below") { x = Math.max(16, r0.left); y = Math.min(r0.bottom + 70, H - ch - 16); }
+    const W = innerWidth, H = innerHeight, gap = 22, pad = 8;
+    const rects = s.targets.map(boxOf).filter(Boolean).map((el) => el.getBoundingClientRect())
+      .map((r) => ({ l: r.left - pad, t: r.top - pad, r: r.right + pad, b: r.bottom + pad }));
+    // 화면을 살짝 어둡게 하고 대상 자리만 뚫는다(evenodd). 클릭은 그대로 통과한다.
+    const hole = (q) => `M${q.l + 12},${q.t}H${q.r - 12}Q${q.r},${q.t} ${q.r},${q.t + 12}V${q.b - 12}Q${q.r},${q.b} ${q.r - 12},${q.b}H${q.l + 12}Q${q.l},${q.b} ${q.l},${q.b - 12}V${q.t + 12}Q${q.l},${q.t} ${q.l + 12},${q.t}Z`;
+    layer.querySelector("svg").innerHTML =
+      `<path fill-rule="evenodd" fill="rgba(20,22,28,.38)" d="M0,0H${W}V${H}H0Z ${rects.map(hole).join(" ")}"/>` +
+      rects.map((q) => `<path d="${hole(q)}" fill="none" stroke="#3b9cff" stroke-width="4"/>`).join("");
+    // 카드는 첫 대상의 오른쪽, 안 되면 왼쪽, 안 되면 아래. 꼬리(notch)는 대상 쪽 변에 붙인다.
+    const card = layer.querySelector(".tour-card"), cw = card.offsetWidth, ch = card.offsetHeight, q = rects[0];
+    let x, y, side;
+    if (!q) { x = (W - cw) / 2; y = (H - ch) / 2; side = ""; }
+    else if (s.place !== "below" && q.r + gap + cw < W - 16) { x = q.r + gap; side = "left"; }
+    else if (s.place !== "below" && q.l - gap - cw > 16) { x = q.l - gap - cw; side = "right"; }
+    else { x = Math.min(Math.max(16, q.l), W - cw - 16); y = Math.min(q.b + gap, H - ch - 16); side = "top"; }
+    const midY = q ? (Math.max(q.t, 0) + Math.min(q.b, H)) / 2 : 0;
+    if (side === "left" || side === "right") y = Math.min(Math.max(16, midY - ch / 2), H - ch - 16);
     Object.assign(card.style, { left: x + "px", top: y + "px" });
-    // 화살표: 카드 가장자리에서 각 대상의 가장 가까운 점으로
-    const cx = x + cw / 2, cy = y + ch / 2;
-    layer.querySelector("svg").innerHTML = `<defs><marker id="tour-head" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff5a1f"/></marker></defs>` +
-      rects.map((r) => {
-        const tx = Math.min(Math.max(cx, r.left - 8), r.right + 8), ty = Math.min(Math.max(cy, Math.max(r.top, 0) - 8), Math.min(r.bottom, H) + 8);
-        const sx = Math.min(Math.max(tx, x), x + cw), sy = Math.min(Math.max(ty, y), y + ch);
-        return `<line x1="${sx}" y1="${sy}" x2="${tx}" y2="${ty}" stroke="#ff5a1f" stroke-width="5" stroke-linecap="round" marker-end="url(#tour-head)"/>`;
-      }).join("");
+    card.dataset.side = side;
+    const notch = card.querySelector(".tour-notch");
+    if (side === "top") notch.style.cssText = `left:${Math.min(Math.max(24, (q.l + q.r) / 2 - x), cw - 24)}px;top:-9px`;
+    else if (side) notch.style.cssText = `top:${Math.min(Math.max(24, midY - y), ch - 24)}px;${side}:-9px`;
   }
 
   function go(n) {
@@ -59,9 +52,9 @@
     layer.querySelector(".tour-n").textContent = i + 1;
     layer.querySelector(".tour-t").textContent = s.title;
     layer.querySelector(".tour-x").textContent = s.text;
-    layer.querySelector(".tour-c").textContent = `${i + 1} / ${STEPS.length}`;
+    layer.querySelector(".tour-c").textContent = `${i + 1} of ${STEPS.length}`;
     layer.querySelector(".tour-prev").disabled = i === 0;
-    layer.querySelector(".tour-next").textContent = i === STEPS.length - 1 ? "끝" : "다음 →";
+    layer.querySelector(".tour-next").textContent = i === STEPS.length - 1 ? "끝" : "다음";
     const first = boxOf(s.targets[0]);
     if (first) first.scrollIntoView({ block: "center" });
     requestAnimationFrame(draw);
@@ -75,9 +68,12 @@
       layer.className = "tour";
       layer.innerHTML = `<svg aria-hidden="true"></svg>
         <div class="tour-card" role="dialog" aria-live="polite">
-          <div class="tour-head"><span class="tour-n"></span><strong class="tour-t"></strong></div>
+          <span class="tour-notch"></span>
+          <button type="button" class="tour-end" aria-label="안내 닫기">✕</button>
+          <span class="tour-n"></span>
+          <strong class="tour-t"></strong>
           <p class="tour-x"></p>
-          <div class="tour-nav"><span class="tour-c"></span><span><button type="button" class="btn tour-end">닫기</button> <button type="button" class="btn tour-prev">← 이전</button> <button type="button" class="btn primary tour-next"></button></span></div>
+          <div class="tour-nav"><span class="tour-c"></span><span><button type="button" class="tour-prev">이전</button><button type="button" class="tour-next"></button></span></div>
         </div>`;
       document.body.append(layer);
       layer.querySelector(".tour-prev").addEventListener("click", () => go(i - 1));
