@@ -379,3 +379,4 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 .tour.solo .tour-t { margin-top: 10px; font-size: 18px; }
 .tour.solo .tour-x { margin: 6px 0 14px; font-size: 15px; }
 .tour.solo .tour-back { display: flex; justify-content: center; align-items: center; height: 46px; border-radius: 999px; background: #fff; color: #1f1f1f; font-size: 16px; font-weight: 600; text-decoration: none; }
+.tour-tag { position: absolute; max-width: calc(100vw - 120px); padding: 3px 10px; border-radius: 999px; background: #3b9cff; color: #fff; font-size: 13px; font-weight: 700; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
