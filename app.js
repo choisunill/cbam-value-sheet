@@ -16,7 +16,7 @@
     "입력값은 이 기기에만 저장됩니다": "Inputs are stored on this device only",
     "계산은 브라우저 안에서만 합니다. 서버로 보내는 데이터가 없습니다.": "All calculation happens in your browser. Nothing is sent to a server.",
     "예시 불러오기": "Load example", "가상의 회사와 바이어로 채운 시연용 예시를 불러옵니다": "Loads a demo example with a fictional company and buyer",
-    "PC에 설치": "Install app", "예시": "Example", "단계 메뉴": "Steps menu",
+    "PC에 설치": "Install app", "예시": "Example", "결과가 바뀌었습니다 ↓ 보기": "Result updated ↓ View", "단계 메뉴": "Steps menu",
     "제품 진단": "Product check", "바이어 진단": "Buyer profile", "가격 비교": "Price comparison", "제안서": "Value sheet", "협상 메일": "Reply email",
     "공식 기본값 기준 · 2026년 3분기 인증서 가격 €82.32": "Official default values · Q3 2026 certificate price €82.32",
     "CN 코드": "CN code", "품목 설명": "Product description", "규제 진단": "Regulatory check", "TradeGuard 연계": "linked to TradeGuard",
@@ -617,7 +617,9 @@
     document.body.dataset.tab = ids[cur]; // 가격 비교 단계에서는 오른쪽에 제안서 대신 그래프를 보여 준다
     try { sessionStorage.setItem("cbam-tab", ids[cur]); } catch { /* 무시 */ }
   }
-  links.forEach((a, k) => a.addEventListener("click", (e) => { e.preventDefault(); show(k); }));
+  const goStep = (k) => { const prev = cur; show(k); if (cur !== prev) history.pushState({ tab: ids[cur] }, ""); window.scrollTo({ top: 0 }); };
+  links.forEach((a, k) => a.addEventListener("click", (e) => { e.preventDefault(); goStep(k); }));
+  addEventListener("popstate", (e) => { const k = ids.indexOf(e.state?.tab); if (k >= 0) { show(k); window.scrollTo({ top: 0 }); } });
   // 휴대폰: ☰를 누르면 단계 메뉴가 왼쪽에서 나온다. 단계를 고르거나 바깥을 누르면 닫힌다.
   const menuBtn = document.getElementById("menuBtn");
   const setMenu = (open) => { document.body.classList.toggle("menu-open", open); menuBtn.setAttribute("aria-expanded", String(open)); };
@@ -625,7 +627,20 @@
   links.forEach((a) => a.addEventListener("click", () => setMenu(false)));
   document.addEventListener("click", (e) => { if (!e.target.closest(".sider, #menuBtn")) setMenu(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") setMenu(false); });
-  document.getElementById("prevStep").addEventListener("click", () => { show(cur - 1); window.scrollTo({ top: 0 }); });
-  document.getElementById("nextStep").addEventListener("click", () => { show(cur + 1); window.scrollTo({ top: 0 }); });
+  document.getElementById("prevStep").addEventListener("click", () => goStep(cur - 1));
+  document.getElementById("nextStep").addEventListener("click", () => goStep(cur + 1));
   show(cur);
+  history.replaceState({ tab: ids[cur] }, "");
+
+  // 8) 휴대폰: 값을 바꿨는데 결과(제안서·그래프)가 화면 아래에 있으면 알려 주고 누르면 내려간다
+  const toast = document.getElementById("toast"), preview = document.querySelector(".preview");
+  let toastTimer;
+  document.getElementById("form").addEventListener("change", () => {
+    if (!matchMedia("(max-width: 760px)").matches || document.body.classList.contains("tour-solo-on")) return;
+    if (preview.getBoundingClientRect().top < innerHeight) return;
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (toast.hidden = true), 4000);
+  });
+  toast.addEventListener("click", () => { toast.hidden = true; scrollTo({ top: preview.getBoundingClientRect().top + scrollY - 72, behavior: "smooth" }); });
 })();

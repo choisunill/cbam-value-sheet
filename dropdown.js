@@ -49,14 +49,32 @@
       html += `<div class="dd-opt${k === cur ? " on" : ""}${o.disabled ? " off" : ""}" role="option" data-k="${k}" aria-selected="${k === cur}"><span>${esc(o.textContent || "—")}</span>${k === cur ? CHECK : ""}</div>`;
     });
     list.innerHTML = html;
+    if (sel.options.length > 15 && matchMedia("(hover: hover)").matches) {
+      const q = document.createElement("input");
+      q.className = "dd-search";
+      q.type = "search";
+      q.placeholder = document.documentElement.lang === "en" ? "Search" : "검색";
+      q.setAttribute("aria-label", q.placeholder);
+      list.prepend(q);
+      q.addEventListener("input", () => {
+        const v = q.value.trim().toLowerCase();
+        list.querySelectorAll(".dd-group").forEach((g) => (g.hidden = !!v));
+        let first = null;
+        list.querySelectorAll(".dd-opt").forEach((o) => {
+          o.hidden = !!v && !o.textContent.toLowerCase().includes(v);
+          if (!o.hidden && !o.classList.contains("off") && first == null) first = +o.dataset.k;
+        });
+        if (first != null) mark(first);
+      });
+      setTimeout(() => q.focus({ preventScroll: true })); // 포커스 때문에 페이지가 스크롤되면 목록이 닫힌다
+    }
     document.body.append(list);
     btn.setAttribute("aria-expanded", "true");
     btn.setAttribute("aria-controls", list.id);
     open = { sel, list, btn, k: cur };
     place();
-    list.querySelector(".dd-opt.on")?.scrollIntoView({ block: "nearest" });
     mark(cur);
-    list.addEventListener("mousedown", (e) => e.preventDefault()); // 누르는 동안 버튼에서 포커스가 빠지지 않게
+    list.addEventListener("mousedown", (e) => { if (e.target.tagName !== "INPUT") e.preventDefault(); }); // 누르는 동안 포커스가 빠지지 않게(검색칸은 예외)
     list.addEventListener("click", (e) => { const o = e.target.closest(".dd-opt:not(.off)"); if (o) pick(+o.dataset.k); });
   }
 
@@ -75,7 +93,10 @@
     if (!open) return;
     open.k = k;
     open.list.querySelectorAll(".dd-opt").forEach((n) => n.classList.toggle("hover", +n.dataset.k === k));
-    open.list.querySelector(`.dd-opt[data-k="${k}"]`)?.scrollIntoView({ block: "nearest" });
+    // 목록 안에서만 스크롤한다. scrollIntoView는 페이지까지 움직여서 scroll 이벤트로 목록이 닫힌다.
+    const n = open.list.querySelector(`.dd-opt[data-k="${k}"]`), l = open.list;
+    if (n && n.offsetTop < l.scrollTop) l.scrollTop = n.offsetTop - 6;
+    else if (n && n.offsetTop + n.offsetHeight > l.scrollTop + l.clientHeight) l.scrollTop = n.offsetTop + n.offsetHeight - l.clientHeight + 6;
   }
 
   function pick(k) {
@@ -99,11 +120,14 @@
 
   document.addEventListener("keydown", (e) => {
     if (!open) return;
-    const opts = [...open.sel.options], step = (d) => { let k = open.k; do { k += d; } while (opts[k] && opts[k].disabled); if (opts[k]) mark(k); };
+    const opts = [...open.sel.options], inSearch = e.target.classList?.contains("dd-search");
+    const hid = (k) => open.list.querySelector(`.dd-opt[data-k="${k}"]`)?.hidden;
+    const step = (d, from = open.k) => { let k = from; do { k += d; } while (opts[k] && (opts[k].disabled || hid(k))); if (opts[k]) mark(k); };
     if (e.key === "Escape") { e.preventDefault(); const b = open.btn; close(); b.focus(); }
     else if (e.key === "ArrowDown") { e.preventDefault(); step(1); }
     else if (e.key === "ArrowUp") { e.preventDefault(); step(-1); }
-    else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(open.k); }
+    else if ((e.key === "Home" || e.key === "End") && !inSearch) { e.preventDefault(); e.key === "Home" ? step(1, -1) : step(-1, opts.length); }
+    else if (e.key === "Enter" || (e.key === " " && !inSearch)) { e.preventDefault(); if (!hid(open.k)) pick(open.k); }
     else if (e.key === "Tab") close();
   }, true);
   document.addEventListener("mousedown", (e) => { if (open && !open.list.contains(e.target) && e.target !== open.btn) close(); });

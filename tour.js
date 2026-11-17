@@ -67,7 +67,7 @@ window.TOUR_STEPS = [
     layer.querySelector(".tour-back").href = `guide.html#g${i + 1}`;
     layer.querySelector(".tour-back").textContent = i === STEPS.length - 1 ? "← 설명서로 돌아가기" : "← 설명서";
     layer.querySelector(".tour-fwd").hidden = i === STEPS.length - 1;
-    if (solo) history.replaceState(null, "", `?step=${i + 1}`); // 새로고침해도 같은 단계
+    if (solo) history.replaceState(history.state, "", `?step=${i + 1}`); // 새로고침해도 같은 단계
     layer.querySelector(".tour-c").textContent = `${i + 1} of ${STEPS.length}`;
     layer.querySelector(".tour-prev").disabled = i === 0;
     layer.querySelector(".tour-next").textContent = i === STEPS.length - 1 ? "끝" : "다음";
@@ -77,7 +77,16 @@ window.TOUR_STEPS = [
     requestAnimationFrame(draw);
   }
 
-  function end() { i = -1; if (layer) layer.hidden = true; if (marks) marks.innerHTML = ""; document.body.classList.remove("tour-solo-on"); }
+  function end() {
+    i = -1;
+    if (layer) layer.hidden = true;
+    if (marks) marks.innerHTML = "";
+    document.body.classList.remove("tour-solo-on");
+    if (solo) { solo = false; layer?.classList.remove("solo"); history.replaceState(history.state, "", location.pathname); }
+  }
+  // 3) 메뉴·이전/다음·뒤로가기로 안내와 다른 단계로 가면 안내를 끝낸다(남은 테두리가 엉뚱한 곳을 가리키지 않게)
+  new MutationObserver(() => { if (i >= 0 && document.body.dataset.tab !== STEPS[i].tab) end(); })
+    .observe(document.body, { attributes: true, attributeFilter: ["data-tab"] });
 
   function start(n = 0) {
     if (!layer) {
@@ -103,7 +112,7 @@ window.TOUR_STEPS = [
       layer.querySelector(".tour-fwd").addEventListener("click", () => go(i + 1));
       addEventListener("resize", draw);
       addEventListener("scroll", () => solo || draw(), true); // 휴대폰은 페이지에 그려 두므로 스크롤 때 다시 그릴 필요가 없다
-      document.addEventListener("keydown", (e) => { if (i < 0) return; if (e.key === "Escape") end(); if (e.key === "ArrowRight") go(i + 1); if (e.key === "ArrowLeft") go(i - 1); });
+      document.addEventListener("keydown", (e) => { if (i < 0 || e.defaultPrevented || e.target.closest?.("input, textarea, select, .dd-btn, [contenteditable]")) return; if (e.key === "Escape") end(); if (e.key === "ArrowRight") go(i + 1); if (e.key === "ArrowLeft") go(i - 1); });
       // 4단계처럼 화면에서 값을 바꾸면 대상 크기가 바뀌므로 다시 그린다
       document.getElementById("form").addEventListener("change", () => {
         // 휴대폰 4단계: 업종을 바꾸면 아래 제안서로 내려가 바뀐 모습을 보여 준다

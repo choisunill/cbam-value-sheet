@@ -339,7 +339,7 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 .code-pick .dd-btn:first-of-type { min-width: 104px; }
 .add-rival .dd-btn { color: var(--ink-2); }
 .dd-list {
-  position: fixed; z-index: 900; max-width: min(460px, calc(100vw - 16px)); overflow-y: auto; padding: 6px;
+  position: fixed; z-index: 1100; max-width: min(460px, calc(100vw - 16px)); overflow-y: auto; overscroll-behavior: contain; padding: 6px;
   background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, .12), 0 2px 6px rgba(0, 0, 0, .05);
   animation: dd-in .12s ease;
 }
@@ -389,3 +389,30 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 .tour-mark { position: absolute; border: 4px solid #3b9cff; border-radius: 16px; box-shadow: 0 0 0 6px rgba(59, 156, 255, .18); }
 /* 아래에 붙은 설명 카드에 마지막 내용이 가리지 않게 */
 body.tour-solo-on { padding-bottom: 280px; }
+
+/* 점검(사용성)에서 고친 것 */
+/* 1) 드롭다운 목록은 시연 안내(z-index 1000)보다 위. 12) 긴 목록 검색칸 */
+.dd-opt[hidden], .dd-group[hidden] { display: none; }
+.dd-search { width: 100%; height: 36px; margin: 0 0 6px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--fill); font-size: 14px; }
+.dd-search:focus { outline: none; border-color: var(--accent); background: #fff; }
+/* 6) 비교 원산지 빼기 ✕: 누르는 자리를 넓히고 체크박스와 띄운다 */
+.crow .remove { width: 40px; height: 40px; margin: -10px -10px -10px 8px; border-radius: 50%; font-size: 15px; }
+.crow .remove:hover { background: #fdecec; }
+.crow .top > span { display: inline-flex; align-items: center; }
+/* 3) 휴대폰 한 단계 보기에서는 폼의 이전/다음을 숨긴다(아래 카드의 "다음 단계"와 겹친다) */
+body.tour-solo-on .stepnav { display: none; }
+/* 8) 결과가 바뀌었다는 알림 */
+.toast { position: fixed; left: 50%; bottom: 20px; z-index: 50; transform: translateX(-50%); height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--ink); color: #fff; font-size: 15px; font-weight: 600; white-space: nowrap; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); cursor: pointer; }
+.toast[hidden] { display: none; }
+@media (max-width: 760px) {
+  /* 5) iPhone은 16px보다 작은 입력칸을 누르면 화면을 확대한다 */
+  input, textarea { font-size: 16px; }
+  /* 11) 손가락으로 누르기 쉬운 크기 */
+  .seg button { height: 40px; }
+  .preview-label .seg button { height: 36px; font-size: 13px; }
+  .stepnav .btn { height: 44px; padding: 0 22px; font-size: 15px; }
+  .menu-btn { width: 44px; height: 44px; }
+  .code-desc summary { padding: 10px 0; }
+  .check { min-height: 40px; }
+  .check input[type=checkbox] { width: 20px; height: 20px; }
+}
