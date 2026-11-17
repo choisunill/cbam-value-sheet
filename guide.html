@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사용 설명서 · CBAM Value Sheet</title>
+<meta name="theme-color" content="#16181d">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* 휴대폰 청중용: 발표 화면의 시연 단계를 글로 따라온다 */
+  body { font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif; }
+  .g { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; word-break: keep-all; }
+  .g h1 { font-size: 24px; line-height: 1.35; margin: 8px 0 8px; }
+  .g .lead { color: var(--ink-2); font-size: 15px; margin: 0 0 24px; }
+  .g ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  .g li { background: var(--surface); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); }
+  .g .n { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; }
+  .g .tab { margin-left: 8px; font-size: 13px; color: var(--ink-3); }
+  .g h2 { font-size: 18px; line-height: 1.4; margin: 12px 0 6px; }
+  .g p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-2); }
+  .g .go { display: flex; justify-content: center; align-items: center; margin-top: 24px; height: 52px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 16px; font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+<main class="g">
+  <h1>CBAM Value Sheet<br>사용 설명서</h1>
+  <p class="lead">발표 화면의 시연을 이 순서대로 따라오시면 됩니다. 회사와 바이어는 가상입니다.</p>
+  <ol id="steps"></ol>
+  <a class="go" href="index.html">예시 화면으로 직접 해보기</a>
+</main>
+<script src="tour.js"></script>
+<script>
+  const TAB = { s2: "2단계 바이어 진단", s3: "3단계 가격 비교", s5: "5단계 협상 메일" };
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  document.getElementById("steps").innerHTML = window.TOUR_STEPS.map((s, i) =>
+    `<li><span class="n">${i + 1}</span><span class="tab">${TAB[s.tab] || ""}</span><h2>${esc(s.title)}</h2><p>${esc(s.m || s.text)}</p></li>`).join("");
+</script>
+</body>
+</html>

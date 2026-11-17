@@ -1,7 +1,7 @@
 // 발표 시연용 안내: "예시 불러오기"를 누르면 단계별로 번호·제목·화살표를 띄운다.
 // shortcut: 안내 문구는 한국어만. 영어 발표가 생기면 T()처럼 두 언어로 나눈다.
-(function () {
-  const STEPS = [
+// 단계 문구는 guide.html(휴대폰 사용 설명서)도 같이 쓴다. m은 휴대폰용 문구(제안서가 오른쪽이 아니라 아래에 있다).
+window.TOUR_STEPS = [
     { tab: "s2", targets: ["#company", "#buyer"], title: "상황 설정",
       text: "한국 볼트 수출기업 한빛볼트(주)가 독일 바이어 Muster GmbH로부터 CBAM 비용을 나눠 내자는 요청을 받았습니다. (가상의 회사)" },
     { tab: "s3", targets: ["#chart"], title: "원산지별 총조달비용 비교",
@@ -9,10 +9,15 @@
     { tab: "s3", targets: ["#compare .crow:nth-child(1)", "#compare .crow:nth-child(4)"], title: "대만은 가격 유지, 베트남은 가격 외 경쟁",
       text: "대만보다는 총비용이 낮아 가격을 지킬 수 있습니다. 베트남보다는 CBAM을 전부 떠안아도 비싸서 납기·품질·자료 지원으로 경쟁해야 합니다." },
     { tab: "s2", place: "below", targets: ['[data-q="industry"]', "#sheet"], title: "바이어 유형을 바꾸면 제안서가 달라집니다",
-      text: "업종을 ‘건설·프로젝트’로 바꿔 보세요. 오른쪽 제안서의 제목과 맨 위 내용이 가격 조항 중심으로 바뀝니다." },
+      text: "업종을 ‘건설·프로젝트’로 바꿔 보세요. 오른쪽 제안서의 제목과 맨 위 내용이 가격 조항 중심으로 바뀝니다.",
+      m: "2단계에서 업종을 ‘건설·프로젝트’로 바꿔 보세요. 아래 제안서의 제목과 맨 위 내용이 가격 조항 중심으로 바뀝니다." },
     { tab: "s5", place: "below", targets: ["#mailBody", "#sheet"], title: "Buyer Value Sheet와 협상 메일 완성",
-      text: "왼쪽은 바이어의 분담 요청에 답하는 메일 초안, 오른쪽은 바이어에게 보낼 한 장짜리 제안서입니다. 6단계에서 PDF로 저장합니다." },
-  ];
+      text: "왼쪽은 바이어의 분담 요청에 답하는 메일 초안, 오른쪽은 바이어에게 보낼 한 장짜리 제안서입니다. 6단계에서 PDF로 저장합니다.",
+      m: "5단계에는 바이어의 분담 요청에 답하는 메일 초안, 그 아래에는 바이어에게 보낼 한 장짜리 제안서가 있습니다. 6단계에서 PDF로 저장합니다." },
+];
+(function () {
+  if (!document.getElementById("demo")) return; // guide.html에서는 문구만 쓴다
+  const STEPS = window.TOUR_STEPS;
   let i = -1, layer;
 
   const boxOf = (sel) => { const el = document.querySelector(sel); return el && (el.closest(".field") || el); };
@@ -90,5 +95,6 @@
   }
 
   // app.js의 예시 채우기가 먼저 실행된 뒤 안내를 띄운다
-  document.getElementById("demo").addEventListener("click", () => setTimeout(start, 0));
+  // 휴대폰은 화면을 가리는 카드 대신 사용 설명서 페이지를 연다(예시 값은 저장돼 있어 돌아오면 그대로다)
+  document.getElementById("demo").addEventListener("click", () => setTimeout(() => (matchMedia("(max-width: 760px)").matches ? (location.href = "guide.html") : start()), 0));
 })();

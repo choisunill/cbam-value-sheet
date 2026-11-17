@@ -16,7 +16,7 @@
     "입력값은 이 기기에만 저장됩니다": "Inputs are stored on this device only",
     "계산은 브라우저 안에서만 합니다. 서버로 보내는 데이터가 없습니다.": "All calculation happens in your browser. Nothing is sent to a server.",
     "예시 불러오기": "Load example", "가상의 회사와 바이어로 채운 시연용 예시를 불러옵니다": "Loads a demo example with a fictional company and buyer",
-    "PC에 설치": "Install app",
+    "PC에 설치": "Install app", "예시": "Example", "단계 메뉴": "Steps menu",
     "제품 진단": "Product check", "바이어 진단": "Buyer profile", "가격 비교": "Price comparison", "제안서": "Value sheet", "협상 메일": "Reply email",
     "공식 기본값 기준 · 2026년 3분기 인증서 가격 €82.32": "Official default values · Q3 2026 certificate price €82.32",
     "CN 코드": "CN code", "품목 설명": "Product description", "규제 진단": "Regulatory check", "TradeGuard 연계": "linked to TradeGuard",
@@ -618,6 +618,13 @@
     try { sessionStorage.setItem("cbam-tab", ids[cur]); } catch { /* 무시 */ }
   }
   links.forEach((a, k) => a.addEventListener("click", (e) => { e.preventDefault(); show(k); }));
+  // 휴대폰: ☰를 누르면 단계 메뉴가 왼쪽에서 나온다. 단계를 고르거나 바깥을 누르면 닫힌다.
+  const menuBtn = document.getElementById("menuBtn");
+  const setMenu = (open) => { document.body.classList.toggle("menu-open", open); menuBtn.setAttribute("aria-expanded", String(open)); };
+  menuBtn.addEventListener("click", (e) => { e.stopPropagation(); setMenu(!document.body.classList.contains("menu-open")); });
+  links.forEach((a) => a.addEventListener("click", () => setMenu(false)));
+  document.addEventListener("click", (e) => { if (!e.target.closest(".sider, #menuBtn")) setMenu(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") setMenu(false); });
   document.getElementById("prevStep").addEventListener("click", () => { show(cur - 1); window.scrollTo({ top: 0 }); });
   document.getElementById("nextStep").addEventListener("click", () => { show(cur + 1); window.scrollTo({ top: 0 }); });
   show(cur);
