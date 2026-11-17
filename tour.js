@@ -18,7 +18,7 @@ window.TOUR_STEPS = [
 (function () {
   if (!document.getElementById("demo")) return; // guide.html에서는 문구만 쓴다
   const STEPS = window.TOUR_STEPS;
-  let i = -1, layer, solo = false; // solo: 설명서에서 한 단계만 보러 들어온 경우(휴대폰)
+  let i = -1, layer, marks, solo = false; // solo: 설명서에서 한 단계만 보러 들어온 경우(휴대폰)
 
   const boxOf = (sel) => { const el = document.querySelector(sel); return el && (el.closest(".field") || el); };
 
@@ -28,10 +28,12 @@ window.TOUR_STEPS = [
     const W = innerWidth, H = innerHeight, gap = 22, pad = 8;
     const rects = s.targets.map((sel, k) => [boxOf(sel), k]).filter(([el]) => el)
       .map(([el, k]) => { const r = el.getBoundingClientRect(); return { l: r.left - pad, t: r.top - pad, r: r.right + pad, b: r.bottom + pad, k }; });
-    // 휴대폰: 강조한 상자마다 무엇인지 이름표를 붙인다. 입력값을 가리지 않게 상자 윗변 오른쪽에 걸쳐 둔다.
-    layer.querySelector(".tour-tags").innerHTML = !solo ? "" : rects
-      .filter((q) => s.tags?.[q.k] && q.b > 90 && q.t < H)
-      .map((q) => `<span class="tour-tag" style="right:${W - q.r + 12}px;top:${Math.max(q.t - 13, 62)}px">${s.tags[q.k]}</span>`).join("");
+    // 휴대폰: 테두리와 이름표를 화면 위에 띄우지 않고 페이지에 그려 둔다. 스크롤하면 내용과 함께 움직인다.
+    if (solo) {
+      layer.querySelector("svg").innerHTML = "";
+      marks.innerHTML = rects.map((q) => `<div class="tour-mark" style="left:${q.l + scrollX}px;top:${q.t + scrollY}px;width:${q.r - q.l}px;height:${q.b - q.t}px">${s.tags?.[q.k] ? `<span class="tour-tag">${s.tags[q.k]}</span>` : ""}</div>`).join("");
+      return;
+    }
     // 화면을 살짝 어둡게 하고 대상 자리만 뚫는다(evenodd). 클릭은 그대로 통과한다.
     const hole = (q) => `M${q.l + 12},${q.t}H${q.r - 12}Q${q.r},${q.t} ${q.r},${q.t + 12}V${q.b - 12}Q${q.r},${q.b} ${q.r - 12},${q.b}H${q.l + 12}Q${q.l},${q.b} ${q.l},${q.b - 12}V${q.t + 12}Q${q.l},${q.t} ${q.l + 12},${q.t}Z`;
     layer.querySelector("svg").innerHTML =
@@ -75,13 +77,13 @@ window.TOUR_STEPS = [
     requestAnimationFrame(draw);
   }
 
-  function end() { i = -1; if (layer) layer.hidden = true; }
+  function end() { i = -1; if (layer) layer.hidden = true; if (marks) marks.innerHTML = ""; document.body.classList.remove("tour-solo-on"); }
 
   function start(n = 0) {
     if (!layer) {
       layer = document.createElement("div");
       layer.className = "tour";
-      layer.innerHTML = `<svg aria-hidden="true"></svg><div class="tour-tags" aria-hidden="true"></div>
+      layer.innerHTML = `<svg aria-hidden="true"></svg>
         <div class="tour-card" role="dialog" aria-live="polite">
           <span class="tour-notch"></span>
           <button type="button" class="tour-end" aria-label="안내 닫기">✕</button>
@@ -91,13 +93,16 @@ window.TOUR_STEPS = [
           <div class="tour-solo"><a class="tour-back" href="guide.html">← 설명서</a><button type="button" class="tour-fwd">다음 단계 →</button></div>
           <div class="tour-nav"><span class="tour-c"></span><span><button type="button" class="tour-prev">이전</button><button type="button" class="tour-next"></button></span></div>
         </div>`;
-      document.body.append(layer);
+      marks = document.createElement("div");
+      marks.className = "tour-marks";
+      marks.setAttribute("aria-hidden", "true");
+      document.body.append(layer, marks);
       layer.querySelector(".tour-prev").addEventListener("click", () => go(i - 1));
       layer.querySelector(".tour-next").addEventListener("click", () => go(i + 1));
       layer.querySelector(".tour-end").addEventListener("click", end);
       layer.querySelector(".tour-fwd").addEventListener("click", () => go(i + 1));
       addEventListener("resize", draw);
-      addEventListener("scroll", draw, true);
+      addEventListener("scroll", () => solo || draw(), true); // 휴대폰은 페이지에 그려 두므로 스크롤 때 다시 그릴 필요가 없다
       document.addEventListener("keydown", (e) => { if (i < 0) return; if (e.key === "Escape") end(); if (e.key === "ArrowRight") go(i + 1); if (e.key === "ArrowLeft") go(i - 1); });
       // 4단계처럼 화면에서 값을 바꾸면 대상 크기가 바뀌므로 다시 그린다
       document.getElementById("form").addEventListener("change", () => {
@@ -109,6 +114,7 @@ window.TOUR_STEPS = [
     }
     layer.hidden = false;
     layer.classList.toggle("solo", solo);
+    document.body.classList.toggle("tour-solo-on", solo);
     go(n);
   }
 

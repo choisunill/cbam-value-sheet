@@ -384,4 +384,8 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
 .tour.solo .tour-fwd { flex: 1.4; border: 0; background: #fff; color: #1f1f1f; }
 .tour.solo .tour-fwd[hidden] { display: none; }
 .tour.solo .tour-solo:has(.tour-fwd[hidden]) .tour-back { background: #fff; color: #1f1f1f; border: 0; }
-.tour-tag { position: absolute; max-width: calc(100vw - 120px); padding: 3px 10px; border-radius: 999px; background: #3b9cff; color: #fff; font-size: 13px; font-weight: 700; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.tour-tag { position: absolute; right: 12px; top: -14px; max-width: calc(100% - 24px); padding: 3px 10px; border-radius: 999px; background: #3b9cff; color: #fff; font-size: 13px; font-weight: 700; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.tour-marks { position: absolute; top: 0; left: 0; width: 0; height: 0; z-index: 5; pointer-events: none; }
+.tour-mark { position: absolute; border: 4px solid #3b9cff; border-radius: 16px; box-shadow: 0 0 0 6px rgba(59, 156, 255, .18); }
+/* 아래에 붙은 설명 카드에 마지막 내용이 가리지 않게 */
+body.tour-solo-on { padding-bottom: 280px; }
