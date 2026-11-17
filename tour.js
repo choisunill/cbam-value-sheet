@@ -63,6 +63,9 @@ window.TOUR_STEPS = [
     layer.querySelector(".tour-t").textContent = s.title;
     layer.querySelector(".tour-x").textContent = solo ? s.m || s.text : s.text;
     layer.querySelector(".tour-back").href = `guide.html#g${i + 1}`;
+    layer.querySelector(".tour-back").textContent = i === STEPS.length - 1 ? "← 설명서로 돌아가기" : "← 설명서";
+    layer.querySelector(".tour-fwd").hidden = i === STEPS.length - 1;
+    if (solo) history.replaceState(null, "", `?step=${i + 1}`); // 새로고침해도 같은 단계
     layer.querySelector(".tour-c").textContent = `${i + 1} of ${STEPS.length}`;
     layer.querySelector(".tour-prev").disabled = i === 0;
     layer.querySelector(".tour-next").textContent = i === STEPS.length - 1 ? "끝" : "다음";
@@ -85,13 +88,14 @@ window.TOUR_STEPS = [
           <span class="tour-n"></span>
           <strong class="tour-t"></strong>
           <p class="tour-x"></p>
-          <a class="tour-back" href="guide.html">← 설명서로 돌아가기</a>
+          <div class="tour-solo"><a class="tour-back" href="guide.html">← 설명서</a><button type="button" class="tour-fwd">다음 단계 →</button></div>
           <div class="tour-nav"><span class="tour-c"></span><span><button type="button" class="tour-prev">이전</button><button type="button" class="tour-next"></button></span></div>
         </div>`;
       document.body.append(layer);
       layer.querySelector(".tour-prev").addEventListener("click", () => go(i - 1));
       layer.querySelector(".tour-next").addEventListener("click", () => go(i + 1));
       layer.querySelector(".tour-end").addEventListener("click", end);
+      layer.querySelector(".tour-fwd").addEventListener("click", () => go(i + 1));
       addEventListener("resize", draw);
       addEventListener("scroll", draw, true);
       document.addEventListener("keydown", (e) => { if (i < 0) return; if (e.key === "Escape") end(); if (e.key === "ArrowRight") go(i + 1); if (e.key === "ArrowLeft") go(i - 1); });
