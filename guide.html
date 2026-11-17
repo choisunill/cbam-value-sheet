@@ -20,13 +20,18 @@
   .g .tab { margin-left: 8px; font-size: 13px; color: var(--ink-3); }
   .g h2 { font-size: 18px; line-height: 1.4; margin: 12px 0 6px; }
   .g p { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-2); }
+  .g li a { display: block; color: inherit; text-decoration: none; }
+  .g li:active { transform: scale(.98); }
+  .g li { scroll-margin-top: 16px; transition: transform .08s ease; }
+  .g .see { display: inline-block; margin-top: 12px; font-size: 15px; font-weight: 600; color: var(--accent); }
+  .g li:target { outline: 3px solid var(--accent); }
   .g .go { display: flex; justify-content: center; align-items: center; margin-top: 24px; height: 52px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 16px; font-weight: 600; text-decoration: none; }
 </style>
 </head>
 <body>
 <main class="g">
   <h1>CBAM Value Sheet<br>사용 설명서</h1>
-  <p class="lead">발표 화면의 시연을 이 순서대로 따라오시면 됩니다. 회사와 바이어는 가상입니다.</p>
+  <p class="lead">발표 화면의 시연을 이 순서대로 따라오시면 됩니다. 단계를 누르면 해당 화면이 표시됩니다. 회사와 바이어는 가상입니다.</p>
   <ol id="steps"></ol>
   <a class="go" href="index.html">예시 화면으로 직접 해보기</a>
 </main>
@@ -35,7 +40,7 @@
   const TAB = { s2: "2단계 바이어 진단", s3: "3단계 가격 비교", s5: "5단계 협상 메일" };
   const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   document.getElementById("steps").innerHTML = window.TOUR_STEPS.map((s, i) =>
-    `<li><span class="n">${i + 1}</span><span class="tab">${TAB[s.tab] || ""}</span><h2>${esc(s.title)}</h2><p>${esc(s.m || s.text)}</p></li>`).join("");
+    `<li id="g${i + 1}"><a href="index.html?step=${i + 1}"><span class="n">${i + 1}</span><span class="tab">${TAB[s.tab] || ""}</span><h2>${esc(s.title)}</h2><p>${esc(s.m || s.text)}</p><span class="see">화면에서 보기 →</span></a></li>`).join("");
 </script>
 </body>
 </html>

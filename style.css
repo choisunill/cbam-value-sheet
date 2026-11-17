@@ -370,3 +370,12 @@ body[data-tab="s3"] .paper, body[data-tab="s3"] .preview-label { display: none; 
   .menu a .num { display: inline-flex; }
   .sider-note { display: block; padding: 0 12px; }
 }
+
+/* 휴대폰 한 단계 보기(설명서에서 들어옴): 카드는 화면 아래에 붙이고, 다음/이전 대신 설명서로 돌아가기 */
+.tour-back { display: none; }
+.tour.solo .tour-card { left: 8px !important; right: 8px; top: auto !important; bottom: 8px; width: auto; padding: 18px 18px 16px; border-radius: 20px; }
+.tour.solo .tour-notch, .tour.solo .tour-nav { display: none; }
+.tour.solo .tour-n { width: 32px; height: 32px; font-size: 16px; }
+.tour.solo .tour-t { margin-top: 10px; font-size: 18px; }
+.tour.solo .tour-x { margin: 6px 0 14px; font-size: 15px; }
+.tour.solo .tour-back { display: flex; justify-content: center; align-items: center; height: 46px; border-radius: 999px; background: #fff; color: #1f1f1f; font-size: 16px; font-weight: 600; text-decoration: none; }

@@ -18,7 +18,7 @@ window.TOUR_STEPS = [
 (function () {
   if (!document.getElementById("demo")) return; // guide.html에서는 문구만 쓴다
   const STEPS = window.TOUR_STEPS;
-  let i = -1, layer;
+  let i = -1, layer, solo = false; // solo: 설명서에서 한 단계만 보러 들어온 경우(휴대폰)
 
   const boxOf = (sel) => { const el = document.querySelector(sel); return el && (el.closest(".field") || el); };
 
@@ -34,6 +34,7 @@ window.TOUR_STEPS = [
       `<path fill-rule="evenodd" fill="rgba(20,22,28,.38)" d="M0,0H${W}V${H}H0Z ${rects.map(hole).join(" ")}"/>` +
       rects.map((q) => `<path d="${hole(q)}" fill="none" stroke="#3b9cff" stroke-width="4"/>`).join("");
     // 카드는 첫 대상의 오른쪽, 안 되면 왼쪽, 안 되면 아래. 꼬리(notch)는 대상 쪽 변에 붙인다.
+    if (solo) return;
     const card = layer.querySelector(".tour-card"), cw = card.offsetWidth, ch = card.offsetHeight, q = rects[0];
     let x, y, side;
     if (!q) { x = (W - cw) / 2; y = (H - ch) / 2; side = ""; }
@@ -56,18 +57,20 @@ window.TOUR_STEPS = [
     document.querySelector(`#tabs a[href="#${s.tab}"]`).click();
     layer.querySelector(".tour-n").textContent = i + 1;
     layer.querySelector(".tour-t").textContent = s.title;
-    layer.querySelector(".tour-x").textContent = s.text;
+    layer.querySelector(".tour-x").textContent = solo ? s.m || s.text : s.text;
+    layer.querySelector(".tour-back").href = `guide.html#g${i + 1}`;
     layer.querySelector(".tour-c").textContent = `${i + 1} of ${STEPS.length}`;
     layer.querySelector(".tour-prev").disabled = i === 0;
     layer.querySelector(".tour-next").textContent = i === STEPS.length - 1 ? "끝" : "다음";
     const first = boxOf(s.targets[0]);
-    if (first) first.scrollIntoView({ block: "center" });
+    if (first && solo) scrollTo({ top: first.getBoundingClientRect().top + scrollY - 76 }); // 맨 위 줄(56px) 바로 아래에 대상의 윗변을 둔다
+    else if (first) first.scrollIntoView({ block: "center" });
     requestAnimationFrame(draw);
   }
 
   function end() { i = -1; if (layer) layer.hidden = true; }
 
-  function start() {
+  function start(n = 0) {
     if (!layer) {
       layer = document.createElement("div");
       layer.className = "tour";
@@ -78,6 +81,7 @@ window.TOUR_STEPS = [
           <span class="tour-n"></span>
           <strong class="tour-t"></strong>
           <p class="tour-x"></p>
+          <a class="tour-back" href="guide.html">← 설명서로 돌아가기</a>
           <div class="tour-nav"><span class="tour-c"></span><span><button type="button" class="tour-prev">이전</button><button type="button" class="tour-next"></button></span></div>
         </div>`;
       document.body.append(layer);
@@ -91,10 +95,19 @@ window.TOUR_STEPS = [
       document.getElementById("form").addEventListener("change", () => requestAnimationFrame(draw));
     }
     layer.hidden = false;
-    go(0);
+    layer.classList.toggle("solo", solo);
+    go(n);
   }
 
   // app.js의 예시 채우기가 먼저 실행된 뒤 안내를 띄운다
   // 휴대폰은 화면을 가리는 카드 대신 사용 설명서 페이지를 연다(예시 값은 저장돼 있어 돌아오면 그대로다)
-  document.getElementById("demo").addEventListener("click", () => setTimeout(() => (matchMedia("(max-width: 760px)").matches ? (location.href = "guide.html") : start()), 0));
+  document.getElementById("demo").addEventListener("click", () => setTimeout(() => (solo ? null : matchMedia("(max-width: 760px)").matches ? (location.href = "guide.html") : start()), 0));
+
+  // 설명서에서 단계를 누르면 index.html?step=N 으로 온다. 그 단계만 강조하고 "설명서로 돌아가기"를 보여 준다.
+  const n = Number(new URLSearchParams(location.search).get("step"));
+  if (n >= 1 && n <= STEPS.length) {
+    solo = true;
+    if (!document.getElementById("company").value) document.getElementById("demo").click(); // QR로 바로 온 경우 예시부터 채운다
+    setTimeout(() => start(n - 1), 0);
+  }
 })();
