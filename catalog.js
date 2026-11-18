@@ -13,7 +13,7 @@
     "Saudi Arabia": "사우디아라비아", Philippines: "필리핀", Pakistan: "파키스탄", Australia: "호주",
   };
   const EN = { "Viet Nam": "Vietnam", "Korea, Republic of (South Korea)": "Korea" };
-  const MARKUP = { 2026: 0.1, 2027: 0.2, 2028: 0.3 };
+  const MARKUP = Object.fromEntries([2026, 2027, 2028].map((y) => [y, E.markupFor(y)])); // 할증률 원본은 data.js 하나
 
   const nameKo = (c) => KO[c] || c;
   const nameEn = (c) => EN[c] || c;
@@ -65,7 +65,7 @@
     } else benchmark = benchmarkFor(cn, route, year);
     if (benchmark == null) return { ok: false, reason: "이 코드의 벤치마크를 하나로 정할 수 없습니다." };
     d.route = route;
-    const see = d.total * (1 + (year >= 2028 ? MARKUP[2028] : MARKUP[year]));
+    const see = d.total * (1 + E.markupFor(year));
     const { n } = E.certificates({ see, benchmark, year });
     const price = E.resolvePrice({ year, quarter, scenarioPrice });
     return { ok: true, cn, origin, year, defaultValue: d.total, dvCode: d.code, route: d.route, benchmark, see, certificates: n, price, costPerTonne: n * price.value };

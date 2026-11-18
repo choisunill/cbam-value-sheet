@@ -159,5 +159,5 @@
     };
   }
 
-  return { certificates, resolvePrice, defaultCost, mixedCost, actualCost, checkCoverage, totalCost, buyerCost, paybackTonnes, compareDefaults };
+  return { markupFor, certificates, resolvePrice, defaultCost, mixedCost, actualCost, checkCoverage, totalCost, buyerCost, paybackTonnes, compareDefaults };
 });

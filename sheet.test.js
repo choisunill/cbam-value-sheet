@@ -197,3 +197,17 @@ test("인증서 가격: 다음 분기 값이 나올 때가 지나면 낡았다�
   assert.ok(S.regCheck(S.build(st), st, false, new Date("2027-02-01")).some((i) => i.level === "warn" && i.text.includes("인증서 가격")));
   assert.ok(!S.regCheck(S.build(st), st, false, new Date("2026-11-12")).some((i) => i.level === "warn" && i.text.includes("인증서 가격")));
 });
+
+test("인증서 가격은 data.js의 최신 공표값 하나만 바꾸면 계산이 따라간다", () => {
+  const D = require("./data.js");
+  const saved = { ...D.latestPublishedPrice }, savedQ4 = D.certificatePrice["2026Q4"];
+  D.latestPublishedPrice.period = "2026Q4"; D.latestPublishedPrice.value = 90; D.certificatePrice["2026Q4"] = 90;
+  delete require.cache[require.resolve("./sheet.js")];
+  try {
+    const s = require("./sheet.js").build(base);
+    assert.ok(Math.abs(s.current.cost - 2.4915 * 90) < 0.01);
+  } finally {
+    Object.assign(D.latestPublishedPrice, saved); D.certificatePrice["2026Q4"] = savedQ4;
+    delete require.cache[require.resolve("./sheet.js")];
+  }
+});

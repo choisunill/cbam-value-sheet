@@ -10,6 +10,15 @@
   const BY_CODE = Object.fromEntries(ALL.map((c) => [c.cn, c]));
   const num = (v) => (v === "" || v == null || Number(v) < 0 ? NaN : Number(v)); // 음수는 빈칸으로 본다
 
+  // 인증서 가격 문구는 data.js의 최신 공표값 하나에서 만든다. 가격이 새로 나오면 data.js만 고친다.
+  const LP = window.CBAM_DATA.latestPublishedPrice;
+  const [LP_Y, LP_Q] = LP.period.split("Q");
+  const LP_EUR = eur(LP.value, 2);
+  const NOTE_KO = `공식 기본값 기준 · ${LP_Y}년 ${LP_Q}분기 인증서 가격 ${LP_EUR}`;
+  const METHOD_KO = `기본값 경로: 인증서 수 = 기본값 × (1 + 할증) − 벤치마크 × CBAM 계수. 근거 IR 2026/1740, IR 2025/2620, Directive 2003/87, 인증서 가격은 집행위 공표값(${LP_Y}년 ${LP_Q}분기 ${LP_EUR}). 기본값(2026-08-06판)과 벤치마크(2026-02-06판)는 EU 집행위 공개 Excel에서 가져왔습니다.`;
+  $("priceNote").textContent = NOTE_KO;
+  $("methodNote").textContent = METHOD_KO;
+
   // 화면 언어. 고정 문구는 EN 사전(한국어 → 영어)으로, 숫자가 끼는 문구는 T(한국어, 영어)로 바꾼다.
   const EN = {
     "한국산 철강·알루미늄 CBAM 제안서 작성": "CBAM proposal sheets for Korean-origin steel and aluminium",
@@ -18,7 +27,7 @@
     "예시 불러오기": "Load example", "가상의 회사와 바이어로 채운 시연용 예시를 불러옵니다": "Loads a demo example with a fictional company and buyer",
     "PC에 설치": "Install app", "예시": "Example", "결과가 바뀌었습니다 ↓ 보기": "Result updated ↓ View", "단계 메뉴": "Steps menu",
     "제품 진단": "Product check", "바이어 진단": "Buyer profile", "가격 비교": "Price comparison", "제안서": "Value sheet", "협상 메일": "Reply email",
-    "공식 기본값 기준 · 2026년 3분기 인증서 가격 €82.32": "Official default values · Q3 2026 certificate price €82.32",
+    [NOTE_KO]: `Official default values · Q${LP_Q} ${LP_Y} certificate price ${LP_EUR}`,
     "CN 코드": "CN code", "품목 설명": "Product description", "규제 진단": "Regulatory check", "TradeGuard 연계": "linked to TradeGuard",
     "수입 연도": "Import year", "연간 수출량 (톤)": "Annual export volume (tonnes)",
     "우리 회사명": "Our company name", "바이어 회사명": "Buyer company name", "예: OO볼트(주)": "e.g. OO Bolt Co., Ltd.", "예: Muster GmbH": "e.g. Muster GmbH",
@@ -29,8 +38,8 @@
     "바이어 요청 회신": "reply to a buyer request",
     "3단계 판정과 가격 조항을 반영한 회신 초안입니다. 언어는 제안서 언어와 같습니다.": "A reply draft based on the step 3 verdict and the price clause. Same language as the sheet.",
     "비교 원산지": "Compare with", "메일 복사": "Copy email", "이전": "Back", "다음": "Next",
-    "기본값 경로: 인증서 수 = 기본값 × (1 + 할증) − 벤치마크 × CBAM 계수. 근거 IR 2026/1740, IR 2025/2620, Directive 2003/87, 인증서 가격은 집행위 공표값(2026년 3분기 €82.32). 기본값(2026-08-06판)과 벤치마크(2026-02-06판)는 EU 집행위 공개 Excel에서 가져왔습니다.":
-      "Default value route: certificates = default value × (1 + mark-up) − benchmark × CBAM factor. Basis: IR 2026/1740, IR 2025/2620, Directive 2003/87; certificate price as published by the Commission (Q3 2026, €82.32). Default values (2026-08-06 edition) and benchmarks (2026-02-06 edition) come from the European Commission's published Excel files.",
+    [METHOD_KO]:
+      `Default value route: certificates = default value × (1 + mark-up) − benchmark × CBAM factor. Basis: IR 2026/1740, IR 2025/2620, Directive 2003/87; certificate price as published by the Commission (Q${LP_Q} ${LP_Y}, ${LP_EUR}). Default values (2026-08-06 edition) and benchmarks (2026-02-06 edition) come from the European Commission's published Excel files.`,
     "2027년 이후는 같은 인증서 가격을 가정한 값이며 전망이 아닙니다. 실제 배출값, 한국 탄소가격 공제는 반영하지 않습니다.":
       "Figures for 2027 onward assume the same certificate price and are not a forecast. Actual emissions and the deduction for carbon prices paid in Korea are not included.",
     "원산지별 총조달비용": "Total landed cost by origin", "단가 + 관세 + CBAM": "unit price + duty + CBAM",
@@ -52,7 +61,7 @@
     "선택 안 함": "Not selected", "공통": "General",
     "업종과 구매 목적을 고르지 않았습니다. 제안서는 비용, 원산지 비교, 가격 조항, 제공 자료를 같은 비중으로 보여 줍니다.": "No industry or purpose selected. The sheet gives equal weight to cost, the comparison, the price clause and the data.",
     "비용 중심": "Cost-focused", "위험·신뢰 중심": "Risk and trust-focused", "비용 확정 중심": "Cost certainty-focused",
-    "재판매 목적. 단가와 총조달비용을 먼저 봅니다. 제안서는 비용, 원산지 비교 순입니다.": "Buys for resale and looks at unit price and total landed cost first. The sheet opens with cost, then the comparison.",
+    "재판매처럼 프로젝트 납품, ESG 요구, 제조사의 생산 투입에 해당하지 않는 경우. 단가와 총조달비용을 먼저 봅니다. 제안서는 비용, 원산지 비교 순입니다.": "Resale and other cases that are not project supply, ESG-driven or a manufacturer's production input. Looks at unit price and total landed cost first. The sheet opens with cost, then the comparison.",
     "생산 투입 또는 공급망 탄소 관리 대상. 제안서는 배출 근거와 검증 상태부터 보여 줍니다.": "Uses the goods in production or manages supply chain carbon. The sheet opens with the emissions basis and verification status.",
     "프로젝트 기간의 비용 변동을 피해야 하는 바이어. 제안서는 가격 조항부터 보여 줍니다.": "Needs stable costs over a project. The sheet opens with the price clause.",
     "아직 없음": "Not yet", "자체 산정": "Self-estimated", "사전검증": "Pre-verified", "EU 인정 검증": "EU-accredited verification",
@@ -364,7 +373,7 @@
       emisT: "Emissions per tonne", emisTSub: "tCO2e/t, official EU default value", emisYSub: "embedded emissions at default value",
       cum: (q) => (q ? `CBAM 2026–2028, ${q.toLocaleString("en-US")} t a year` : "CBAM 2026–2028, per tonne"), cumBuyer: (v) => `of which your share: ${v}`, samePrice: "assuming the same certificate price",
       thYear: "Import year", thMarkup: "Mark-up", thCerts: "Certificates / t", thCost: "CBAM € / t",
-      costSrc: (dv, route, bm) => `Korea default value ${dv} tCO2e/t${route ? ", production route " + route : ""}, CBAM benchmark ${bm}, certificate price ${eur(82.32, 2)} (Q3 2026, published). Later years assume the same price.`,
+      costSrc: (dv, route, bm) => `Korea default value ${dv} tCO2e/t${route ? ", production route " + route : ""}, CBAM benchmark ${bm}, certificate price ${LP_EUR} (Q${LP_Q} ${LP_Y}, published). Later years assume the same price.`,
       compH: (y) => `Total landed cost by origin (${y})`, thOrigin: "Origin", thPrice: "Unit price", thDuty: "Duty", thTotal: "Total € / t",
       korea: "Korea (us)", fta: "0% (EU–Korea FTA)", name: (c) => c.nameEn,
       compSrc: (m, code, cl, avg) => `${m ? "Unit prices: " + S.MARKET_PRICES.source + ", CN " + fmtCode(code) + ". " : avg ? "Unit prices marked * are " + S.MARKET_PRICES.source + "; the others were entered by the supplier. " : "Unit prices as entered by the supplier. "}CBAM at official default values for every origin. Quality and lead time not included.${cl ? " CBAM is shown in full; the price clause is not applied." : ""}`,
@@ -393,7 +402,7 @@
       emisT: "톤당 배출량", emisTSub: "tCO2e/톤, EU 공식 기본값", emisYSub: "기본값 기준 배출량",
       cum: (q) => (q ? `2026~2028년 누적 CBAM, 연 ${q.toLocaleString("ko-KR")}톤` : "2026~2028년 누적 CBAM, 톤당"), cumBuyer: (v) => `이 중 귀사 부담 ${v}`, samePrice: "같은 인증서 가격 가정",
       thYear: "수입 연도", thMarkup: "할증", thCerts: "인증서 수 / 톤", thCost: "CBAM € / 톤",
-      costSrc: (dv, route, bm) => `한국 기본값 ${dv} tCO2e/톤${route ? ", 생산경로 " + route : ""}, CBAM 벤치마크 ${bm}, 인증서 가격 ${eur(82.32, 2)}(2026년 3분기 공표). 2027년 이후는 같은 가격을 가정했습니다.`,
+      costSrc: (dv, route, bm) => `한국 기본값 ${dv} tCO2e/톤${route ? ", 생산경로 " + route : ""}, CBAM 벤치마크 ${bm}, 인증서 가격 ${LP_EUR}(${LP_Y}년 ${LP_Q}분기 공표). 2027년 이후는 같은 가격을 가정했습니다.`,
       compH: (y) => `원산지별 총조달비용 비교 (${y}년)`, thOrigin: "원산지", thPrice: "단가", thDuty: "관세", thTotal: "합계 € / 톤",
       korea: "한국 (당사)", fta: "0% (한-EU FTA)", name: (c) => c.nameKo,
       compSrc: (m, code, cl, avg) => `${m ? "단가: 2025년 독일 수입 평균(Eurostat Comext, CIF 기준·관세 전, CN " + fmtCode(code) + "). " : avg ? "* 표시 단가는 2025년 독일 수입 평균(Eurostat Comext, CIF 기준·관세 전)이고, 나머지는 공급사가 입력한 값입니다. " : "단가는 공급사가 입력한 값입니다. "}모든 원산지의 CBAM은 공식 기본값으로 계산했습니다. 품질과 납기는 반영하지 않았습니다.${cl ? " CBAM은 전액 기준이며 가격 조항은 반영하지 않았습니다." : ""}`,
@@ -418,7 +427,7 @@
   function sheetHTML(s) {
     if (!s.ok) return `<div class="empty">${esc(tr(s.reason))}</div>`;
     const L = TEXT[state.lang] || TEXT.en;
-    const t = s.type, cur = s.current, today = new Date().toISOString().slice(0, 10);
+    const t = s.type, cur = s.current, today = new Date().toLocaleDateString("sv-SE"); // 사용자 기기 시간대의 YYYY-MM-DD (UTC로 찍으면 한국 오전 9시 전에 전날이 됨)
     const from = state.company.trim() || L.company, to = state.buyer.trim() || L.buyer;
     const other = s.year === 2028 ? s.years[0] : s.years[2];
     const isAvg = (origin, price) => price === S.marketPrice(s.code, origin);

@@ -56,7 +56,7 @@
     },
     cost: {
       label: "비용 중심",
-      why: "재판매 목적. 단가와 총조달비용을 먼저 봅니다. 제안서는 비용, 원산지 비교 순입니다.",
+      why: "재판매처럼 프로젝트 납품, ESG 요구, 제조사의 생산 투입에 해당하지 않는 경우. 단가와 총조달비용을 먼저 봅니다. 제안서는 비용, 원산지 비교 순입니다.",
       headline: "CBAM cost per tonne and total landed cost",
       pitch: "As the EU importer, you pay CBAM. This sheet gives the cost per tonne, how it changes to 2028, and the data your declaration needs.",
       headlineKo: "톤당 CBAM 비용과 총조달비용 안내",
@@ -111,7 +111,9 @@
     installation: { ko: "공장(설비) 정보", en: "Installation details (site, process)" },
   };
 
-  const q = (year) => (year === 2026 ? 3 : undefined);
+  // 최신 공표 분기(data.js latestPublishedPrice)의 가격을 그해 수입분에 쓴다. 가격이 새로 나오면 data.js만 고친다.
+  const [LATEST_Y, LATEST_Q] = DATA.latestPublishedPrice.period.split("Q").map(Number);
+  const q = (year) => (year === LATEST_Y ? LATEST_Q : undefined);
 
   // 우리 단가를 넣으면 경쟁국의 관세율 기본값을 채워 주는 데 쓴다.
   // 관세율(%): EU TARIC 기준(duty-data.js). 반덤핑·상계관세·수입금지가 걸린 원산지와 자료가 없는 코드는 null.
